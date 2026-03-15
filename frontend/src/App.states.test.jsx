@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 import { vi } from "vitest";
 
 const useQueryMock = vi.fn();
+const useMutationMock = vi.fn();
 
 vi.mock("@apollo/client/react", async () => {
   const actual = await vi.importActual("@apollo/client/react");
@@ -10,6 +11,7 @@ vi.mock("@apollo/client/react", async () => {
   return {
     ...actual,
     useQuery: (...args) => useQueryMock(...args),
+    useMutation: (...args) => useMutationMock(...args),
   };
 });
 
@@ -18,6 +20,8 @@ import App from "./App.jsx";
 describe("App states", () => {
   beforeEach(() => {
     useQueryMock.mockReset();
+    useMutationMock.mockReset();
+    useMutationMock.mockReturnValue([vi.fn(), {}]);
   });
 
   it("shows a loading message while the query is in flight", () => {

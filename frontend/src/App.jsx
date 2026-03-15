@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useQuery, useMutation } from "@apollo/client/react";
 
 import { GET_USERS } from "./graphql/queries/userQueries";
@@ -33,7 +33,7 @@ function App() {
   };
 
   if (loading) return <p>Loading...</p>;
-  if (error) return <p>Error</p>;
+  if (error) return <p>Error: {error.message}</p>;
 
   return (
     <div>
@@ -56,9 +56,11 @@ function App() {
       {submitError ? <p>{submitError}</p> : null}
 
       <h2>Users</h2>
-      {data.users.map((user) => (
-        <p key={user.id}>{user.name}</p>
-      ))}
+      {data.users.length === 0 ? (
+        <p>No users found.</p>
+      ) : (
+        data.users.map((user) => <p key={user.id}>{user.name}</p>)
+      )}
     </div>
   );
 }
