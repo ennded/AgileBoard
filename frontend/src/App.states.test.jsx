@@ -17,6 +17,26 @@ vi.mock("@apollo/client/react", async () => {
 
 import App from "./App.jsx";
 
+function renderAppWithQueryState({ loading = false, error, users = [] } = {}) {
+  useQueryMock.mockReturnValue({
+    loading,
+    error,
+    data: loading || error ? undefined : { users },
+  });
+
+  render(<App />);
+}
+
+function submitUserForm({ name = "Sangam", email = "sangam@example.com" } = {}) {
+  fireEvent.change(screen.getByPlaceholderText("Enter name"), {
+    target: { value: name },
+  });
+  fireEvent.change(screen.getByPlaceholderText("Enter email"), {
+    target: { value: email },
+  });
+  fireEvent.click(screen.getByText("Create User"));
+}
+
 describe("App states", () => {
   beforeEach(() => {
     useQueryMock.mockReset();
@@ -25,37 +45,19 @@ describe("App states", () => {
   });
 
   it("shows a loading message while the query is in flight", () => {
-    useQueryMock.mockReturnValue({
-      loading: true,
-      error: undefined,
-      data: undefined,
-    });
-
-    render(<App />);
+    renderAppWithQueryState({ loading: true });
 
     expect(screen.getByText("Loading...")).toBeInTheDocument();
   });
 
   it("shows an empty state when no users are returned", () => {
-    useQueryMock.mockReturnValue({
-      loading: false,
-      error: undefined,
-      data: { users: [] },
-    });
-
-    render(<App />);
+    renderAppWithQueryState();
 
     expect(screen.getByText("No users found.")).toBeInTheDocument();
   });
 
   it("shows the GraphQL error message when the query fails", () => {
-    useQueryMock.mockReturnValue({
-      loading: false,
-      error: new Error("Backend unavailable"),
-      data: undefined,
-    });
-
-    render(<App />);
+    renderAppWithQueryState({ error: new Error("Backend unavailable") });
 
     expect(screen.getByText("Error: Backend unavailable")).toBeInTheDocument();
   });
@@ -65,22 +67,9 @@ describe("App states", () => {
       data: { createUser: { id: "1", name: "Sangam", email: "sangam@example.com" } },
     });
 
-    useQueryMock.mockReturnValue({
-      loading: false,
-      error: undefined,
-      data: { users: [] },
-    });
     useMutationMock.mockReturnValue([createUserMock, {}]);
-
-    render(<App />);
-
-    fireEvent.change(screen.getByPlaceholderText("Enter name"), {
-      target: { value: "Sangam" },
-    });
-    fireEvent.change(screen.getByPlaceholderText("Enter email"), {
-      target: { value: "sangam@example.com" },
-    });
-    fireEvent.click(screen.getByText("Create User"));
+    renderAppWithQueryState();
+    submitUserForm();
 
     await waitFor(() => {
       expect(createUserMock).toHaveBeenCalledWith({
@@ -97,22 +86,9 @@ describe("App states", () => {
   it("shows the mutation error message when submit fails", async () => {
     const createUserMock = vi.fn().mockRejectedValue(new Error("Create failed"));
 
-    useQueryMock.mockReturnValue({
-      loading: false,
-      error: undefined,
-      data: { users: [] },
-    });
     useMutationMock.mockReturnValue([createUserMock, {}]);
-
-    render(<App />);
-
-    fireEvent.change(screen.getByPlaceholderText("Enter name"), {
-      target: { value: "Sangam" },
-    });
-    fireEvent.change(screen.getByPlaceholderText("Enter email"), {
-      target: { value: "sangam@example.com" },
-    });
-    fireEvent.click(screen.getByText("Create User"));
+    renderAppWithQueryState();
+    submitUserForm();
 
     await waitFor(() => {
       expect(screen.getByText("Create failed")).toBeInTheDocument();
