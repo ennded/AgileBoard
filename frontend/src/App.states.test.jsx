@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { vi } from "vitest";
 
 const useQueryMock = vi.fn();
@@ -58,5 +58,64 @@ describe("App states", () => {
     render(<App />);
 
     expect(screen.getByText("Error: Backend unavailable")).toBeInTheDocument();
+  });
+
+  it("submits the form and clears the inputs when the mutation succeeds", async () => {
+    const createUserMock = vi.fn().mockResolvedValue({
+      data: { createUser: { id: "1", name: "Sangam", email: "sangam@example.com" } },
+    });
+
+    useQueryMock.mockReturnValue({
+      loading: false,
+      error: undefined,
+      data: { users: [] },
+    });
+    useMutationMock.mockReturnValue([createUserMock, {}]);
+
+    render(<App />);
+
+    fireEvent.change(screen.getByPlaceholderText("Enter name"), {
+      target: { value: "Sangam" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("Enter email"), {
+      target: { value: "sangam@example.com" },
+    });
+    fireEvent.click(screen.getByText("Create User"));
+
+    await waitFor(() => {
+      expect(createUserMock).toHaveBeenCalledWith({
+        variables: { name: "Sangam", email: "sangam@example.com" },
+      });
+    });
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText("Enter name")).toHaveValue("");
+      expect(screen.getByPlaceholderText("Enter email")).toHaveValue("");
+    });
+  });
+
+  it("shows the mutation error message when submit fails", async () => {
+    const createUserMock = vi.fn().mockRejectedValue(new Error("Create failed"));
+
+    useQueryMock.mockReturnValue({
+      loading: false,
+      error: undefined,
+      data: { users: [] },
+    });
+    useMutationMock.mockReturnValue([createUserMock, {}]);
+
+    render(<App />);
+
+    fireEvent.change(screen.getByPlaceholderText("Enter name"), {
+      target: { value: "Sangam" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("Enter email"), {
+      target: { value: "sangam@example.com" },
+    });
+    fireEvent.click(screen.getByText("Create User"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Create failed")).toBeInTheDocument();
+    });
   });
 });
