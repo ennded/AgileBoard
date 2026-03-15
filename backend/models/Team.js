@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const User = require("./User");
 
-const TeamSchema = mongoose.Schema(
+const TeamSchema = new mongoose.Schema(
   {
     name: {
       type: String,
