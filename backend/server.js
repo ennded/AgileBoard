@@ -6,6 +6,8 @@ require("dotenv").config();
 
 const typeDefs = require("./graphql/typeDefs");
 const resolvers = require("./graphql/resolvers");
+const getUserFromToken = require("./utils/auth");
+const User = require("./models/User");
 
 async function startServer() {
   const app = express();
@@ -15,6 +17,13 @@ async function startServer() {
   const server = new ApolloServer({
     typeDefs,
     resolvers,
+
+    context: async ({ req }) => {
+      const token = req.headers.authorization || " ";
+      const userId = getUserFromToken(token.replace("Bearer ", ""));
+      const user = userId ? await User.findById(userId) : null;
+      return { user };
+    },
   });
 
   await server.start();

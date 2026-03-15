@@ -24,6 +24,11 @@ module.exports = gql`
     user: User
   }
 
+  type Team {
+    id: ID!
+    name: String!
+  }
+
   type Mutation {
     createUser(name: String!, email: String!): User
     createTask(title: String!, userId: ID!): Task
@@ -32,5 +37,9 @@ module.exports = gql`
   extend type Mutation {
     register(name: String!, email: String!, password: String!): User
     login(email: String!, password: String!): AuthPayload
+  }
+
+  extend type Mutation {
+    createTeam(name: String!): Team
   }
 `;
