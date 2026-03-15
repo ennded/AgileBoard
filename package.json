@@ -1,0 +1,12 @@
+{
+  "name": "agileboard",
+  "private": true,
+  "scripts": {
+    "docker:up": "docker compose up -d",
+    "docker:build": "docker compose up -d --build",
+    "docker:down": "docker compose down",
+    "docker:reset": "docker compose down -v --rmi all",
+    "docker:ps": "docker compose ps",
+    "docker:logs": "docker compose logs -f"
+  }
+}
