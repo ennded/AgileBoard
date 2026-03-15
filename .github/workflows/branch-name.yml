@@ -18,8 +18,7 @@ jobs:
         with:
           script: |
             const branchName = context.payload.pull_request.head.ref;
-            const branchPattern = /^(feature|fix|chore|docs|refactor|test|build|ci)\/[a-z0-9._-]+$/;
-
+            const branchPattern = /^[a-z0-9._-]+$/;
             if (!branchPattern.test(branchName)) {
               core.setFailed(
                 `Invalid branch name "${branchName}". Use names like feature/user-list or fix/apollo-client.`
