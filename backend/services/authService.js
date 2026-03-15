@@ -1,6 +1,6 @@
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
-const jwt = require(jsonwebtoken);
+const jwt = require("jsonwebtoken");
 
 const JWT_SECRET = "secret123";
 
@@ -24,7 +24,7 @@ const registerUser = async ({ name, email, password }) => {
 };
 
 const loginUser = async ({ email, password }) => {
-  const user = User.findOne({ email });
+  const user = await User.findOne({ email });
 
   if (!user) {
     throw new Error("User doesnt Exist");

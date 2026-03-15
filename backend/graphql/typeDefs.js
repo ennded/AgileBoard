@@ -19,8 +19,18 @@ module.exports = gql`
     tasks: [Task]
   }
 
+  type AuthPayload {
+    token: String
+    user: User
+  }
+
   type Mutation {
     createUser(name: String!, email: String!): User
     createTask(title: String!, userId: ID!): Task
+  }
+
+  extend type Mutation {
+    register(name: String!, email: String!, password: String!): User
+    login(email: String!, password: String!): AuthPayload
   }
 `;
