@@ -28,10 +28,19 @@ module.exports = gql`
     id: ID!
     name: String!
   }
+  type Project {
+    id: ID!
+    name: String!
+    team: Team
+    createdBy: User
+  }
 
   type Mutation {
     createUser(name: String!, email: String!): User
     createTask(title: String!, userId: ID!): Task
+  }
+  extend type Query {
+    projects(teamId: ID!): [Project]
   }
 
   extend type Mutation {
@@ -41,5 +50,9 @@ module.exports = gql`
 
   extend type Mutation {
     createTeam(name: String!): Team
+  }
+
+  extend type Mutation {
+    createProject(name: String!, teamId: ID!): Project
   }
 `;
