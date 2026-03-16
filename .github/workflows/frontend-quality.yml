@@ -1,5 +1,7 @@
 name: Frontend Quality
 
+# Frontend CI checks are split by concern to keep PR status easy to read.
+
 on:
   pull_request:
     branches:
