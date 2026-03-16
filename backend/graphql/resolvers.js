@@ -2,8 +2,8 @@ const userService = require("../services/userService");
 const authService = require("../services/authService");
 const requireAuth = require("../utils/requireAuth");
 const teamService = require("../services/teamService");
-const Project = require("../models/Project");
 const projectService = require("../services/projectService");
+const taskService = require("../services/taskService");
 
 module.exports = {
   Query: {
@@ -13,6 +13,10 @@ module.exports = {
     projects: async (_, args, context) => {
       requireAuth(context.user);
       return projectService.getProject(args.teamId);
+    },
+    tasks: async (_, args, context) => {
+      requireAuth(context.user);
+      return taskService.getTasks(args.projectId);
     },
   },
 
@@ -33,9 +37,17 @@ module.exports = {
       return teamService.createTeam(args, context.user);
     },
 
-    createProject: async (__, AbortSignal, context) => {
+    createProject: async (_, args, context) => {
       requireAuth(context.user);
-      return projectService.createProject(AbortSignal, context.user);
+      return projectService.createProject(args, context.user);
+    },
+    createTask: async (_, args, context) => {
+      requireAuth(context.user);
+      return taskService.createTask(args, context.user);
+    },
+    updateTaskStatus: async (_, args, context) => {
+      requireAuth(context.user);
+      return taskService.updateTaskStatus(args.taskId, args.status);
     },
   },
 };
