@@ -4,6 +4,7 @@ const requireAuth = require("../utils/requireAuth");
 const teamService = require("../services/teamService");
 const projectService = require("../services/projectService");
 const taskService = require("../services/taskService");
+const User = require("../models/User");
 
 module.exports = {
   Query: {
@@ -48,6 +49,16 @@ module.exports = {
     updateTaskStatus: async (_, args, context) => {
       requireAuth(context.user);
       return taskService.updateTaskStatus(args.taskId, args.status);
+    },
+    assignTask: async (_, args, context) => {
+      requireAuth(context.user);
+      return taskService.assignTask(args.taskId, args.userId);
+    },
+  },
+
+  Task: {
+    assignedTo: async (parent) => {
+      return User.findById(parent.assignedTo);
     },
   },
 };
