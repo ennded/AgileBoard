@@ -75,4 +75,8 @@ module.exports = gql`
       status: TaskStatus!
     ): Task
   }
+
+  extend type Mutation {
+    assignTask(taskId: ID!, userId: ID!): Task
+  }
 `;

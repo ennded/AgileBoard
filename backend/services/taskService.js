@@ -32,4 +32,16 @@ const updateTaskStatus = async (taskId, status) => {
   return task;
 };
 
-module.exports = { createTask, getTasks, updateTaskStatus };
+const assignTask = async (taskId, userId) => {
+  const task = await Task.findById(taskId);
+
+  if (!task) {
+    throw new Error("Task not exist");
+  }
+
+  task.assignedTo = userId;
+  await task.save();
+  return task;
+};
+
+module.exports = { createTask, getTasks, updateTaskStatus, assignTask };
