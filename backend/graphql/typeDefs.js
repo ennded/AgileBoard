@@ -5,6 +5,7 @@ module.exports = gql`
     IN_PROGRESS
     DONE
   }
+
   type User {
     id: ID!
     name: String!
@@ -21,8 +22,13 @@ module.exports = gql`
     assignedTo: User
   }
 
-  type Query {
-    users: [User]
+  type Comment {
+    id: ID!
+    message: String!
+    task: Task
+    user: User
+    createdAt: String
+    updatedAt: String
   }
 
   type AuthPayload {
@@ -34,6 +40,7 @@ module.exports = gql`
     id: ID!
     name: String!
   }
+
   type Project {
     id: ID!
     name: String!
@@ -41,42 +48,27 @@ module.exports = gql`
     createdBy: User
   }
 
-  type Mutation {
-    createUser(name: String!, email: String!): User
-  }
-
-  extend type Query {
+  type Query {
+    users: [User]
     projects(teamId: ID!): [Project]
     tasks(projectId: ID!): [Task]
+    comments(taskId: ID!): [Comment] # ✅ moved here from extend type Comment
   }
 
-  extend type Mutation {
+  type Mutation {
+    createUser(name: String!, email: String!, password: String!): User
     register(name: String!, email: String!, password: String!): User
     login(email: String!, password: String!): AuthPayload
-  }
-
-  extend type Mutation {
     createTeam(name: String!): Team
-  }
-
-  extend type Mutation {
     createProject(name: String!, teamId: ID!): Project
-  }
-
-  extend type Mutation {
     createTask(
       title: String!
       description: String!
       projectId: ID!
       assignedTo: ID!
     ): Task
-    updateTaskStatus(
-      taskId: ID!
-      status: TaskStatus!
-    ): Task
-  }
-
-  extend type Mutation {
+    updateTaskStatus(taskId: ID!, status: TaskStatus!): Task
     assignTask(taskId: ID!, userId: ID!): Task
+    addComment(taskId: ID!, message: String!): Comment
   }
 `;
