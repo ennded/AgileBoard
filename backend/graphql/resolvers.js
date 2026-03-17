@@ -1,3 +1,4 @@
+const Task = require("../models/Task"); // ✅ add this at the top
 const userService = require("../services/userService");
 const authService = require("../services/authService");
 const requireAuth = require("../utils/requireAuth");
@@ -5,6 +6,7 @@ const teamService = require("../services/teamService");
 const projectService = require("../services/projectService");
 const taskService = require("../services/taskService");
 const commentService = require("../services/commentService");
+const notificationService = require("../services/notificationService");
 const User = require("../models/User");
 
 module.exports = {
@@ -23,6 +25,10 @@ module.exports = {
     comments: async (_, args, context) => {
       requireAuth(context.user);
       return commentService.getComments(args.taskId);
+    },
+    notifications: async (_, __, context) => {
+      requireAuth(context.user);
+      return notificationService.getNotifications(context.user._id);
     },
   },
 
@@ -62,6 +68,10 @@ module.exports = {
     addComment: async (_, args, context) => {
       requireAuth(context.user);
       return commentService.createComment(args, context.user);
+    },
+    markNotificationAsRead: async (_, args, context) => {
+      requireAuth(context.user);
+      return notificationService.markAsRead(args.notificationId);
     },
   },
 

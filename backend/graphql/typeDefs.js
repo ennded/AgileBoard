@@ -48,11 +48,19 @@ module.exports = gql`
     createdBy: User
   }
 
+  type Notification {
+    id: ID!
+    type: String
+    message: String
+    read: Boolean
+  }
+
   type Query {
     users: [User]
     projects(teamId: ID!): [Project]
     tasks(projectId: ID!): [Task]
     comments(taskId: ID!): [Comment] # ✅ moved here from extend type Comment
+    notifications: [Notification]
   }
 
   type Mutation {
@@ -70,5 +78,6 @@ module.exports = gql`
     updateTaskStatus(taskId: ID!, status: TaskStatus!): Task
     assignTask(taskId: ID!, userId: ID!): Task
     addComment(taskId: ID!, message: String!): Comment
+    markNotificationAsRead(notificationId: ID!): Notification
   }
 `;
