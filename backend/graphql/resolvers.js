@@ -4,6 +4,7 @@ const requireAuth = require("../utils/requireAuth");
 const teamService = require("../services/teamService");
 const projectService = require("../services/projectService");
 const taskService = require("../services/taskService");
+const commentService = require("../services/commentService");
 const User = require("../models/User");
 
 module.exports = {
@@ -18,6 +19,10 @@ module.exports = {
     tasks: async (_, args, context) => {
       requireAuth(context.user);
       return taskService.getTasks(args.projectId);
+    },
+    comments: async (_, args, context) => {
+      requireAuth(context.user);
+      return commentService.getComments(args.taskId);
     },
   },
 
@@ -54,11 +59,24 @@ module.exports = {
       requireAuth(context.user);
       return taskService.assignTask(args.taskId, args.userId);
     },
+    addComment: async (_, args, context) => {
+      requireAuth(context.user);
+      return commentService.createComment(args, context.user);
+    },
   },
 
   Task: {
     assignedTo: async (parent) => {
       return User.findById(parent.assignedTo);
+    },
+  },
+
+  Comment: {
+    user: async (parent) => {
+      return User.findById(parent.user);
+    },
+    task: async (parent) => {
+      return Task.findById(parent.task);
     },
   },
 };
