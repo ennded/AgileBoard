@@ -65,4 +65,35 @@ const assignTask = async (taskId, userId) => {
   return task;
 };
 
-module.exports = { createTask, getTasks, updateTaskStatus, assignTask };
+const getTaskBoard = async (projectId) => {
+  const tasks = await Task.find({ project: projectId });
+  if (!tasks) {
+    throw new error("Task not found");
+  }
+
+  const board = {
+    todo: [],
+    inProgress: [],
+    done: [],
+  };
+
+  tasks.forEach((task) => {
+    if (task.status === "ToDo") {
+      board.todo.push(task);
+    } else if (task.status === "inProgress") {
+      board.inProgress.push(task);
+    } else if (task.status === "done") {
+      board.done.push(task);
+    }
+  });
+
+  return board;
+};
+
+module.exports = {
+  createTask,
+  getTasks,
+  updateTaskStatus,
+  assignTask,
+  getTaskBoard,
+};

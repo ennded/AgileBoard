@@ -1,4 +1,4 @@
-const Task = require("../models/Task"); // ✅ add this at the top
+const Task = require("../models/Task");
 const userService = require("../services/userService");
 const authService = require("../services/authService");
 const requireAuth = require("../utils/requireAuth");
@@ -29,6 +29,10 @@ module.exports = {
     notifications: async (_, __, context) => {
       requireAuth(context.user);
       return notificationService.getNotifications(context.user._id);
+    },
+    taskBoard: async (_, args, context) => {
+      requireAuth(context.user);
+      return taskService.getTaskBoard(args.projectId);
     },
   },
 

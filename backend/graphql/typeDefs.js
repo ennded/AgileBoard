@@ -55,12 +55,20 @@ module.exports = gql`
     read: Boolean
   }
 
+  type TaskBoard {
+    id: ID!
+    todo: [Task]!
+    inProgress: [Task]!
+    done: [Task]!
+  }
+
   type Query {
     users: [User]
     projects(teamId: ID!): [Project]
     tasks(projectId: ID!): [Task]
-    comments(taskId: ID!): [Comment] # ✅ moved here from extend type Comment
+    comments(taskId: ID!): [Comment]
     notifications: [Notification]
+    taskBoard(projectId: ID!): TaskBoard
   }
 
   type Mutation {
