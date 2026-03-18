@@ -10,7 +10,7 @@ import Login from "./Pages/Login.jsx";
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <ApolloProvider client={client}>
-      <Login />
+      <App />
     </ApolloProvider>
   </StrictMode>,
 );
