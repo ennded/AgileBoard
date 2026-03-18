@@ -17,9 +17,8 @@ async function startServer() {
   const server = new ApolloServer({
     typeDefs,
     resolvers,
-
     context: async ({ req }) => {
-      const token = req.headers.authorization || " ";
+      const token = req.headers.authorization || "";
       const userId = getUserFromToken(token.replace("Bearer ", ""));
       const user = userId ? await User.findById(userId) : null;
       return { user };
@@ -29,19 +28,20 @@ async function startServer() {
   await server.start();
   server.applyMiddleware({ app, path: "/graphql" });
 
+  // ✅ Connect to MongoDB FIRST, then start the server
   mongoose
     .connect(process.env.MONGO_URI)
     .then(() => {
       console.log("MongoDB connected");
+
+      const PORT = process.env.PORT || 5000;
+      app.listen(PORT, () => {
+        console.log(
+          `Server running at http://localhost:${PORT}${server.graphqlPath}`,
+        );
+      });
     })
     .catch((err) => console.log(err));
-
-  const PORT = process.env.PORT || 5000;
-  app.listen(PORT, () => {
-    console.log(
-      `Server running at http://localhost:${PORT}${server.graphqlPath}`,
-    );
-  });
 }
 
 startServer();
