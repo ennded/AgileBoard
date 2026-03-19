@@ -6,95 +6,161 @@ import { LOGIN, REGISTER } from "./graphql/mutations/authMutation";
 import Login from "./Pages/Login";
 import Register from "./Pages/Register";
 
-const loginSuccessMock = {
-  request: {
-    query: LOGIN,
-    variables: { email: "ragnar@gmail.com", password: "sangam@123" },
-  },
-  result: {
-    data: {
-      login: {
-        token: "mock-token-123",
-        user: { id: "1", name: "Ragnar" },
+const validLogin = {
+  email: "ragnar@gmail.com",
+  password: "sangam@123",
+};
+
+const invalidLogin = {
+  email: "wrong@gmail.com",
+  password: "wrongpass",
+};
+
+const validRegistration = {
+  name: "Ragnar",
+  email: "ragnar@gmail.com",
+  password: "sangam@123",
+};
+
+const duplicateRegistration = {
+  name: "Ragnar",
+  email: "existing@gmail.com",
+  password: "sangam@123",
+};
+
+function createMutationSuccessMock(query, variables, fieldName, token) {
+  return {
+    request: {
+      query,
+      variables,
+    },
+    result: {
+      data: {
+        [fieldName]: {
+          token,
+          user: { id: "1", name: "Ragnar" },
+        },
       },
     },
-  },
-};
+  };
+}
 
-const loginErrorMock = {
-  request: {
-    query: LOGIN,
-    variables: { email: "wrong@gmail.com", password: "wrongpass" },
-  },
-  error: new Error("Invalid credentials"),
-};
-
-const registerSuccessMock = {
-  request: {
-    query: REGISTER,
-    variables: {
-      name: "Ragnar",
-      email: "ragnar@gmail.com",
-      password: "sangam@123",
+function createMutationErrorMock(query, variables, message) {
+  return {
+    request: {
+      query,
+      variables,
     },
+    error: new Error(message),
+  };
+}
+
+const loginSuccessMock = createMutationSuccessMock(
+  LOGIN,
+  validLogin,
+  "login",
+  "mock-token-123",
+);
+
+const loginErrorMock = createMutationErrorMock(
+  LOGIN,
+  invalidLogin,
+  "Invalid credentials",
+);
+
+const registerSuccessMock = createMutationSuccessMock(
+  REGISTER,
+  validRegistration,
+  "register",
+  "mock-register-token",
+);
+
+const registerErrorMock = createMutationErrorMock(
+  REGISTER,
+  duplicateRegistration,
+  "Email already exists",
+);
+
+function renderWithProviders(ui, { mocks = [], initialEntries = ["/"] } = {}) {
+  render(
+    <MockedProvider mocks={mocks}>
+      <MemoryRouter initialEntries={initialEntries}>{ui}</MemoryRouter>
+    </MockedProvider>,
+  );
+}
+
+function renderAuthPage(Component, options) {
+  renderWithProviders(<Component />, options);
+}
+
+function renderAuthRoutes(initialEntries) {
+  renderWithProviders(
+    <Routes>
+      <Route path="/" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+    </Routes>,
+    { initialEntries },
+  );
+}
+
+function fillForm(fields) {
+  Object.entries(fields).forEach(([placeholder, value]) => {
+    fireEvent.change(screen.getByPlaceholderText(placeholder), {
+      target: { value },
+    });
+  });
+}
+
+function submitForm(buttonName) {
+  fireEvent.click(screen.getByRole("button", { name: buttonName }));
+}
+
+const renderCases = [
+  {
+    title: "login",
+    Component: Login,
+    heading: "Login",
+    fields: ["Email", "Password"],
+    buttonName: /login/i,
+    linkName: /register/i,
   },
-  result: {
-    data: {
-      register: {
-        token: "mock-register-token",
-        user: { id: "1", name: "Ragnar" },
-      },
-    },
+  {
+    title: "register",
+    Component: Register,
+    heading: "Register",
+    fields: ["Name", "Email", "Password"],
+    buttonName: /register/i,
+    linkName: /login/i,
   },
-};
+];
 
-const registerErrorMock = {
-  request: {
-    query: REGISTER,
-    variables: {
-      name: "Ragnar",
-      email: "existing@gmail.com",
-      password: "sangam@123",
-    },
-  },
-  error: new Error("Email already exists"),
-};
-
-// ─── Login integration tests ───────────────────────────────────────────────
-
-describe("Login integration", () => {
-  it("renders login page with all elements", () => {
-    render(
-      <MockedProvider mocks={[]}>
-        <MemoryRouter>
-          <Login />
-        </MemoryRouter>
-      </MockedProvider>,
-    );
-
-    expect(screen.getByPlaceholderText("Email")).toBeInTheDocument();
-    expect(screen.getByPlaceholderText("Password")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /login/i })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /register/i })).toBeInTheDocument();
+describe("Auth integration", () => {
+  beforeEach(() => {
+    localStorage.clear();
   });
 
-  it("successfully logs in and stores token", async () => {
-    localStorage.clear();
-    render(
-      <MockedProvider mocks={[loginSuccessMock]}>
-        <MemoryRouter>
-          <Login />
-        </MemoryRouter>
-      </MockedProvider>,
-    );
+  it.each(renderCases)(
+    "renders the $title page with all elements",
+    ({ Component, heading, fields, buttonName, linkName }) => {
+      renderAuthPage(Component);
 
-    fireEvent.change(screen.getByPlaceholderText("Email"), {
-      target: { value: "ragnar@gmail.com" },
+      expect(screen.getByRole("heading", { name: heading })).toBeInTheDocument();
+      fields.forEach((field) => {
+        expect(screen.getByPlaceholderText(field)).toBeInTheDocument();
+      });
+      expect(screen.getByRole("button", { name: buttonName })).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: linkName })).toBeInTheDocument();
+    },
+  );
+
+  it("successfully logs in and stores token", async () => {
+    renderAuthPage(Login, { mocks: [loginSuccessMock] });
+
+    fillForm({
+      Email: validLogin.email,
+      Password: validLogin.password,
     });
-    fireEvent.change(screen.getByPlaceholderText("Password"), {
-      target: { value: "sangam@123" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: /login/i }));
+    submitForm(/login/i);
 
     await waitFor(() => {
       expect(localStorage.getItem("token")).toBe("mock-token-123");
@@ -102,21 +168,13 @@ describe("Login integration", () => {
   });
 
   it("shows error message on failed login", async () => {
-    render(
-      <MockedProvider mocks={[loginErrorMock]}>
-        <MemoryRouter>
-          <Login />
-        </MemoryRouter>
-      </MockedProvider>,
-    );
+    renderAuthPage(Login, { mocks: [loginErrorMock] });
 
-    fireEvent.change(screen.getByPlaceholderText("Email"), {
-      target: { value: "wrong@gmail.com" },
+    fillForm({
+      Email: invalidLogin.email,
+      Password: invalidLogin.password,
     });
-    fireEvent.change(screen.getByPlaceholderText("Password"), {
-      target: { value: "wrongpass" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: /login/i }));
+    submitForm(/login/i);
 
     await waitFor(() => {
       expect(
@@ -125,64 +183,15 @@ describe("Login integration", () => {
     });
   });
 
-  it("navigates to register page when Register link is clicked", () => {
-    render(
-      <MockedProvider mocks={[]}>
-        <MemoryRouter initialEntries={["/"]}>
-          <Routes>
-            <Route path="/" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-          </Routes>
-        </MemoryRouter>
-      </MockedProvider>,
-    );
-
-    fireEvent.click(screen.getByRole("link", { name: /register/i }));
-    expect(screen.getByPlaceholderText("Name")).toBeInTheDocument();
-  });
-});
-
-// ─── Register integration tests ────────────────────────────────────────────
-
-describe("Register integration", () => {
-  it("renders register page with all elements", () => {
-    render(
-      <MockedProvider mocks={[]}>
-        <MemoryRouter>
-          <Register />
-        </MemoryRouter>
-      </MockedProvider>,
-    );
-
-    expect(screen.getByPlaceholderText("Name")).toBeInTheDocument();
-    expect(screen.getByPlaceholderText("Email")).toBeInTheDocument();
-    expect(screen.getByPlaceholderText("Password")).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /register/i }),
-    ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /login/i })).toBeInTheDocument();
-  });
-
   it("successfully registers and stores token", async () => {
-    localStorage.clear();
-    render(
-      <MockedProvider mocks={[registerSuccessMock]}>
-        <MemoryRouter>
-          <Register />
-        </MemoryRouter>
-      </MockedProvider>,
-    );
+    renderAuthPage(Register, { mocks: [registerSuccessMock] });
 
-    fireEvent.change(screen.getByPlaceholderText("Name"), {
-      target: { value: "Ragnar" },
+    fillForm({
+      Name: validRegistration.name,
+      Email: validRegistration.email,
+      Password: validRegistration.password,
     });
-    fireEvent.change(screen.getByPlaceholderText("Email"), {
-      target: { value: "ragnar@gmail.com" },
-    });
-    fireEvent.change(screen.getByPlaceholderText("Password"), {
-      target: { value: "sangam@123" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: /register/i }));
+    submitForm(/register/i);
 
     await waitFor(() => {
       expect(localStorage.getItem("token")).toBe("mock-register-token");
@@ -190,24 +199,14 @@ describe("Register integration", () => {
   });
 
   it("shows error message on failed registration", async () => {
-    render(
-      <MockedProvider mocks={[registerErrorMock]}>
-        <MemoryRouter>
-          <Register />
-        </MemoryRouter>
-      </MockedProvider>,
-    );
+    renderAuthPage(Register, { mocks: [registerErrorMock] });
 
-    fireEvent.change(screen.getByPlaceholderText("Name"), {
-      target: { value: "Ragnar" },
+    fillForm({
+      Name: duplicateRegistration.name,
+      Email: duplicateRegistration.email,
+      Password: duplicateRegistration.password,
     });
-    fireEvent.change(screen.getByPlaceholderText("Email"), {
-      target: { value: "existing@gmail.com" },
-    });
-    fireEvent.change(screen.getByPlaceholderText("Password"), {
-      target: { value: "sangam@123" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: /register/i }));
+    submitForm(/register/i);
 
     await waitFor(() => {
       expect(
@@ -216,20 +215,13 @@ describe("Register integration", () => {
     });
   });
 
-  it("navigates to login page when Login link is clicked", () => {
-    render(
-      <MockedProvider mocks={[]}>
-        <MemoryRouter initialEntries={["/register"]}>
-          <Routes>
-            <Route path="/" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-          </Routes>
-        </MemoryRouter>
-      </MockedProvider>,
-    );
+  it("navigates between auth pages using the footer links", () => {
+    renderAuthRoutes(["/"]);
+
+    fireEvent.click(screen.getByRole("link", { name: /register/i }));
+    expect(screen.getByRole("heading", { name: "Register" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("link", { name: /login/i }));
-    expect(screen.getByPlaceholderText("Email")).toBeInTheDocument();
-    expect(screen.getByPlaceholderText("Password")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Login" })).toBeInTheDocument();
   });
 });
