@@ -59,12 +59,14 @@ function Dashboard() {
         <h2 className="font-semibold mb-3">My Teams</h2>
         <ul className="space-y-2">
           {teams.map((team) => (
-            <li
-              key={team.id}
-              onClick={() => navigate(`/team/${team.id}`)}
-              className="p-2 border rounded  cursor-pointer hover:bg-gray-100"
-            >
-              {team.name}
+            <li key={team.id}>
+              <button
+                type="button"
+                onClick={() => navigate(`/team/${team.id}`)}
+                className="w-full rounded border p-2 text-left hover:bg-gray-100"
+              >
+                {team.name}
+              </button>
             </li>
           ))}
         </ul>
