@@ -1,97 +1,57 @@
 import React from "react";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { vi } from "vitest";
-
-const useQueryMock = vi.fn();
-const useMutationMock = vi.fn();
-
-vi.mock("@apollo/client/react", async () => {
-  const actual = await vi.importActual("@apollo/client/react");
-
-  return {
-    ...actual,
-    useQuery: (...args) => useQueryMock(...args),
-    useMutation: (...args) => useMutationMock(...args),
-  };
-});
-
+import { MockedProvider } from "@apollo/client/testing";
+import { render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import App from "./App.jsx";
 
-function renderAppWithQueryState({ loading = false, error, users = [] } = {}) {
-  useQueryMock.mockReturnValue({
-    loading,
-    error,
-    data: loading || error ? undefined : { users },
-  });
-
-  render(<App />);
-}
-
-function submitUserForm({ name = "Sangam", email = "sangam@example.com" } = {}) {
-  fireEvent.change(screen.getByPlaceholderText("Enter name"), {
-    target: { value: name },
-  });
-  fireEvent.change(screen.getByPlaceholderText("Enter email"), {
-    target: { value: email },
-  });
-  fireEvent.click(screen.getByText("Create User"));
+function renderApp(initialEntries = ["/"]) {
+  render(
+    <MockedProvider mocks={[]}>
+      <MemoryRouter initialEntries={initialEntries}>
+        <App />
+      </MemoryRouter>
+    </MockedProvider>,
+  );
 }
 
 describe("App states", () => {
   beforeEach(() => {
-    useQueryMock.mockReset();
-    useMutationMock.mockReset();
-    useMutationMock.mockReturnValue([vi.fn(), {}]);
+    localStorage.clear();
   });
 
-  it("shows a loading message while the query is in flight", () => {
-    renderAppWithQueryState({ loading: true });
+  it("renders the login page on the default route", () => {
+    renderApp();
 
-    expect(screen.getByText("Loading...")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Login" })).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Email")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Password")).toBeInTheDocument();
   });
 
-  it("shows an empty state when no users are returned", () => {
-    renderAppWithQueryState();
+  it("renders the register page on the register route", () => {
+    renderApp(["/register"]);
 
-    expect(screen.getByText("No users found.")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Register" }),
+    ).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Name")).toBeInTheDocument();
   });
 
-  it("shows the GraphQL error message when the query fails", () => {
-    renderAppWithQueryState({ error: new Error("Backend unavailable") });
+  it("redirects unauthenticated users away from the dashboard", () => {
+    renderApp(["/dashboard"]);
 
-    expect(screen.getByText("Error: Backend unavailable")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Login" })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Dashboard" }),
+    ).not.toBeInTheDocument();
   });
 
-  it("submits the form and clears the inputs when the mutation succeeds", async () => {
-    const createUserMock = vi.fn().mockResolvedValue({
-      data: { createUser: { id: "1", name: "Sangam", email: "sangam@example.com" } },
-    });
+  it("renders the dashboard for authenticated users", () => {
+    localStorage.setItem("token", "test-token");
 
-    useMutationMock.mockReturnValue([createUserMock, {}]);
-    renderAppWithQueryState();
-    submitUserForm();
+    renderApp(["/dashboard"]);
 
-    await waitFor(() => {
-      expect(createUserMock).toHaveBeenCalledWith({
-        variables: { name: "Sangam", email: "sangam@example.com" },
-      });
-    });
-
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText("Enter name")).toHaveValue("");
-      expect(screen.getByPlaceholderText("Enter email")).toHaveValue("");
-    });
-  });
-
-  it("shows the mutation error message when submit fails", async () => {
-    const createUserMock = vi.fn().mockRejectedValue(new Error("Create failed"));
-
-    useMutationMock.mockReturnValue([createUserMock, {}]);
-    renderAppWithQueryState();
-    submitUserForm();
-
-    await waitFor(() => {
-      expect(screen.getByText("Create failed")).toBeInTheDocument();
-    });
+    expect(
+      screen.getByRole("heading", { name: "Dashboard" }),
+    ).toBeInTheDocument();
   });
 });

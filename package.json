@@ -8,5 +8,8 @@
     "docker:reset": "docker compose down -v --rmi all",
     "docker:ps": "docker compose ps",
     "docker:logs": "docker compose logs -f"
+  },
+  "dependencies": {
+    "react-router-dom": "^6.30.3"
   }
 }
