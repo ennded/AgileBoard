@@ -1,32 +1,9 @@
 import React from "react";
-import { MockedProvider } from "@apollo/client/testing";
-import { render, screen } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
-import App from "../../App.jsx";
-import { GET_TEAMS } from "../../graphql/queries/teamQueries";
-
-const dashboardMocks = [
-  {
-    request: {
-      query: GET_TEAMS,
-    },
-    result: {
-      data: {
-        teams: [{ id: "1", name: "Platform Team" }],
-      },
-    },
-  },
-];
-
-function renderApp(initialEntries = ["/"], mocks = []) {
-  render(
-    <MockedProvider mocks={mocks}>
-      <MemoryRouter initialEntries={initialEntries}>
-        <App />
-      </MemoryRouter>
-    </MockedProvider>,
-  );
-}
+import { screen } from "@testing-library/react";
+import {
+  createTeamsMock,
+  renderAppRoute,
+} from "../helpers/appRouteTestUtils.jsx";
 
 describe("App integration", () => {
   beforeEach(() => {
@@ -34,7 +11,7 @@ describe("App integration", () => {
   });
 
   it("shows the register screen when users visit the register route", () => {
-    renderApp(["/register"]);
+    renderAppRoute(["/register"]);
 
     expect(
       screen.getByRole("heading", { name: "Register" }),
@@ -43,7 +20,7 @@ describe("App integration", () => {
   });
 
   it("redirects unauthenticated users from dashboard to login", () => {
-    renderApp(["/dashboard"]);
+    renderAppRoute(["/dashboard"]);
 
     expect(screen.getByRole("heading", { name: "Login" })).toBeInTheDocument();
   });
@@ -51,7 +28,7 @@ describe("App integration", () => {
   it("shows the dashboard when a token exists", async () => {
     localStorage.setItem("token", "integration-token");
 
-    renderApp(["/dashboard"], dashboardMocks);
+    renderAppRoute(["/dashboard"], createTeamsMock(["Platform Team"]));
 
     expect(
       await screen.findByRole("heading", { name: "Dashboard" }),
