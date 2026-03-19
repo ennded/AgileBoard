@@ -4,6 +4,7 @@ import Register from "./Pages/Register";
 import Dashboard from "./Pages/Dashboard";
 import ProtectedRoute from "./component/ProtectedRoute";
 import React from "react";
+import Project from "./Pages/Projects";
 
 function App() {
   return (
@@ -15,6 +16,14 @@ function App() {
         element={
           <ProtectedRoute>
             <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/team/:teamId"
+        element={
+          <ProtectedRoute>
+            <Project />
           </ProtectedRoute>
         }
       />

@@ -1,5 +1,6 @@
 import React from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { vi } from "vitest";
 
 const useQueryMock = vi.fn();
@@ -33,7 +34,11 @@ function renderDashboard({
 
   useMutationMock.mockReturnValue([createTeam, mutationState]);
 
-  render(<Dashboard />);
+  render(
+    <MemoryRouter>
+      <Dashboard />
+    </MemoryRouter>,
+  );
 
   return { refetch, createTeam };
 }

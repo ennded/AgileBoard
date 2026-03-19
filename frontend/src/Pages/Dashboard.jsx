@@ -2,8 +2,10 @@ import { useMutation, useQuery } from "@apollo/client";
 import React, { useState } from "react";
 import { GET_TEAMS } from "../graphql/queries/teamQueries";
 import { CREATE_TEAM } from "../graphql/mutations/teamMutation";
+import { useNavigate } from "react-router-dom";
 
 function Dashboard() {
+  const navigate = useNavigate();
   const [teamName, setTeamName] = useState("");
   const { data, loading, error, refetch } = useQuery(GET_TEAMS);
   const [createTeam, { loading: creatingTeam, error: createTeamError }] =
@@ -54,9 +56,13 @@ function Dashboard() {
       </div>
       <div>
         <h2 className="font-semibold mb-3">My Teams</h2>
-        <ul>
+        <ul className="space-y-2">
           {data.teams.map((team) => (
-            <li className="p-2 border rounded " key={team.id}>
+            <li
+              key={team.id}
+              onClick={() => navigate(`/team/${team.id}`)}
+              className="p-2 border rounded  cursor-pointer hover:bg-gray-100"
+            >
               {team.name}
             </li>
           ))}
