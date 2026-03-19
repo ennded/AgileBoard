@@ -1,6 +1,6 @@
 import React from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { vi } from "vitest";
 
 const useQueryMock = vi.fn();
@@ -24,6 +24,7 @@ function renderDashboard({
   refetch = vi.fn(),
   createTeam = vi.fn(),
   mutationState = {},
+  initialEntries = ["/"],
 } = {}) {
   useQueryMock.mockReturnValue({
     data: loading || error ? undefined : { teams },
@@ -35,8 +36,11 @@ function renderDashboard({
   useMutationMock.mockReturnValue([createTeam, mutationState]);
 
   render(
-    <MemoryRouter>
-      <Dashboard />
+    <MemoryRouter initialEntries={initialEntries}>
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/team/:teamId" element={<p>Projects page</p>} />
+      </Routes>
     </MemoryRouter>,
   );
 
@@ -81,6 +85,16 @@ describe("Dashboard states", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Platform Team")).toBeInTheDocument();
     expect(screen.getByText("Design Team")).toBeInTheDocument();
+  });
+
+  it("navigates to the projects page when a team is clicked", async () => {
+    renderDashboard({
+      teams: [{ id: "1", name: "Platform Team" }],
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Platform Team" }));
+
+    expect(await screen.findByText("Projects page")).toBeInTheDocument();
   });
 
   it("updates the team name input as the user types", () => {
