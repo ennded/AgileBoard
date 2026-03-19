@@ -2,6 +2,7 @@ import { useMutation } from "@apollo/client";
 import { REGISTER } from "../graphql/mutations/authMutation";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import React from "react";
 
 function Register() {
   const navigate = useNavigate();

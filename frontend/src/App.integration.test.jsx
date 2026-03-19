@@ -1,40 +1,46 @@
 import React from "react";
-import { MockedProvider } from "@apollo/client/testing/react";
+import { MockedProvider } from "@apollo/client/testing";
 import { render, screen } from "@testing-library/react";
-
+import { MemoryRouter } from "react-router-dom";
 import App from "./App.jsx";
-import { GET_USERS } from "./graphql/queries/userQueries";
 
-const mocks = [
-  {
-    request: {
-      query: GET_USERS,
-    },
-    result: {
-      data: {
-        users: [
-          { id: "1", name: "Sangam" },
-          { id: "2", name: "John" },
-          { id: "3", name: "Alex" },
-        ],
-      },
-    },
-  },
-];
+function renderApp(initialEntries = ["/"]) {
+  render(
+    <MockedProvider mocks={[]}>
+      <MemoryRouter initialEntries={initialEntries}>
+        <App />
+      </MemoryRouter>
+    </MockedProvider>,
+  );
+}
 
 describe("App integration", () => {
-  it("renders users returned by GraphQL", async () => {
-    render(
-      <MockedProvider mocks={mocks}>
-        <App />
-      </MockedProvider>,
-    );
+  beforeEach(() => {
+    localStorage.clear();
+  });
 
-    expect(screen.getByText("Loading...")).toBeInTheDocument();
+  it("shows the register screen when users visit the register route", () => {
+    renderApp(["/register"]);
 
-    expect(await screen.findByText("Users")).toBeInTheDocument();
-    expect(screen.getByText("Sangam")).toBeInTheDocument();
-    expect(screen.getByText("John")).toBeInTheDocument();
-    expect(screen.getByText("Alex")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Register" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Login" })).toBeInTheDocument();
+  });
+
+  it("redirects unauthenticated users from dashboard to login", () => {
+    renderApp(["/dashboard"]);
+
+    expect(screen.getByRole("heading", { name: "Login" })).toBeInTheDocument();
+  });
+
+  it("shows the dashboard when a token exists", () => {
+    localStorage.setItem("token", "integration-token");
+
+    renderApp(["/dashboard"]);
+
+    expect(
+      screen.getByRole("heading", { name: "Dashboard" }),
+    ).toBeInTheDocument();
   });
 });
