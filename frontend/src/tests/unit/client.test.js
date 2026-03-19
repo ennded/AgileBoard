@@ -33,7 +33,7 @@ async function loadClientModule() {
     ApolloLink: ApolloLinkMock,
   }));
 
-  const module = await import("./client.js");
+  const module = await import("../../apollo/client.js");
 
   return {
     client: module.default,

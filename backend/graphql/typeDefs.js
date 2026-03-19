@@ -64,6 +64,7 @@ module.exports = gql`
 
   type Query {
     users: [User]
+    teams: [Team]
     projects(teamId: ID!): [Project]
     tasks(projectId: ID!): [Task]
     comments(taskId: ID!): [Comment]
@@ -73,7 +74,7 @@ module.exports = gql`
 
   type Mutation {
     createUser(name: String!, email: String!, password: String!): User
-    register(name: String!, email: String!, password: String!): User
+    register(name: String!, email: String!, password: String!): AuthPayload
     login(email: String!, password: String!): AuthPayload
     createTeam(name: String!): Team
     createProject(name: String!, teamId: ID!): Project

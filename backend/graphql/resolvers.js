@@ -14,6 +14,10 @@ module.exports = {
     users: async () => {
       return userService.getUser();
     },
+    teams: async (_, __, context) => {
+      requireAuth(context.user);
+      return teamService.getTeams(context.user);
+    },
     projects: async (_, args, context) => {
       requireAuth(context.user);
       return projectService.getProject(args.teamId);

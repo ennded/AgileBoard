@@ -1,18 +1,9 @@
 import React from "react";
-import { MockedProvider } from "@apollo/client/testing";
-import { render, screen } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
-import App from "./App.jsx";
-
-function renderApp(initialEntries = ["/"]) {
-  render(
-    <MockedProvider mocks={[]}>
-      <MemoryRouter initialEntries={initialEntries}>
-        <App />
-      </MemoryRouter>
-    </MockedProvider>,
-  );
-}
+import { screen } from "@testing-library/react";
+import {
+  createTeamsMock,
+  renderAppRoute,
+} from "../helpers/appRouteTestUtils.jsx";
 
 describe("App states", () => {
   beforeEach(() => {
@@ -20,7 +11,7 @@ describe("App states", () => {
   });
 
   it("renders the login page on the default route", () => {
-    renderApp();
+    renderAppRoute();
 
     expect(screen.getByRole("heading", { name: "Login" })).toBeInTheDocument();
     expect(screen.getByPlaceholderText("Email")).toBeInTheDocument();
@@ -28,7 +19,7 @@ describe("App states", () => {
   });
 
   it("renders the register page on the register route", () => {
-    renderApp(["/register"]);
+    renderAppRoute(["/register"]);
 
     expect(
       screen.getByRole("heading", { name: "Register" }),
@@ -37,7 +28,7 @@ describe("App states", () => {
   });
 
   it("redirects unauthenticated users away from the dashboard", () => {
-    renderApp(["/dashboard"]);
+    renderAppRoute(["/dashboard"]);
 
     expect(screen.getByRole("heading", { name: "Login" })).toBeInTheDocument();
     expect(
@@ -45,13 +36,13 @@ describe("App states", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("renders the dashboard for authenticated users", () => {
+  it("renders the dashboard for authenticated users", async () => {
     localStorage.setItem("token", "test-token");
 
-    renderApp(["/dashboard"]);
+    renderAppRoute(["/dashboard"], createTeamsMock());
 
     expect(
-      screen.getByRole("heading", { name: "Dashboard" }),
+      await screen.findByRole("heading", { name: "Dashboard" }),
     ).toBeInTheDocument();
   });
 });

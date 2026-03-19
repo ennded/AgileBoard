@@ -4,6 +4,11 @@ const jwt = require("jsonwebtoken");
 
 const JWT_SECRET = "secret123";
 
+const buildAuthPayload = (user) => {
+  const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: "1d" });
+  return { token, user };
+};
+
 const registerUser = async ({ name, email, password }) => {
   const existingUser = await User.findOne({ email });
 
@@ -20,7 +25,7 @@ const registerUser = async ({ name, email, password }) => {
   });
 
   await user.save();
-  return user;
+  return buildAuthPayload(user);
 };
 
 const loginUser = async ({ email, password }) => {
@@ -36,9 +41,7 @@ const loginUser = async ({ email, password }) => {
     throw new Error("Invalid Password");
   }
 
-  const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: "1d" });
-
-  return { token, user };
+  return buildAuthPayload(user);
 };
 
 module.exports = {

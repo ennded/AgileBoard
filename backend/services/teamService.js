@@ -1,5 +1,9 @@
 const Team = require("../models/Team");
 
+const getTeams = async (user) => {
+  return Team.find({ members: user._id });
+};
+
 const createTeam = async (data, user) => {
   const team = new Team({
     name: data.name,
@@ -11,4 +15,4 @@ const createTeam = async (data, user) => {
   return team;
 };
 
-module.exports = { createTeam };
+module.exports = { getTeams, createTeam };

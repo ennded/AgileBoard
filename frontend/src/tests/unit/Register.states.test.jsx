@@ -13,7 +13,7 @@ vi.mock("@apollo/client", async () => {
   };
 });
 
-import Register from "./Pages/Register";
+import Register from "../../Pages/Register";
 
 function renderRegister() {
   render(
