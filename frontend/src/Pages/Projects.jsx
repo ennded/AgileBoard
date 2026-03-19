@@ -14,6 +14,7 @@ function Project() {
 
   const [createProject, { loading: creatingProject, error: createProjectError }] =
     useMutation(CREATE_PROJECT);
+  const projects = data?.projects ?? [];
 
   const handleCreateProject = async () => {
     if (!projectName) return;
@@ -62,7 +63,7 @@ function Project() {
       <div className="bg-white p-4 rounded shadow">
         <h2 className="font-semibold mb-3">Projects</h2>
         <ul className="space-y-2">
-          {data.projects.map((project) => (
+          {projects.map((project) => (
             <li key={project.id} className="p-2 border rounded">
               {project.name}
             </li>

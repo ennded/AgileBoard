@@ -10,6 +10,7 @@ function Dashboard() {
   const { data, loading, error, refetch } = useQuery(GET_TEAMS);
   const [createTeam, { loading: creatingTeam, error: createTeamError }] =
     useMutation(CREATE_TEAM);
+  const teams = data?.teams ?? [];
 
   const handleCreateTeam = async () => {
     if (!teamName) {
@@ -57,7 +58,7 @@ function Dashboard() {
       <div>
         <h2 className="font-semibold mb-3">My Teams</h2>
         <ul className="space-y-2">
-          {data.teams.map((team) => (
+          {teams.map((team) => (
             <li
               key={team.id}
               onClick={() => navigate(`/team/${team.id}`)}
