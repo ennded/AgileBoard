@@ -10,8 +10,8 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:run": "vitest run",
-    "test:unit": "vitest run src/apollo/client.test.js src/graphql/queries/userQueries.test.js src/App.states.test.jsx",
-    "test:functional": "vitest run src/App.integration.test.jsx",
+    "test:unit": "vitest run src/tests/unit",
+    "test:functional": "vitest run src/tests/functional",
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {

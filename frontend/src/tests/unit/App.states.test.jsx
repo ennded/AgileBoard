@@ -2,11 +2,25 @@ import React from "react";
 import { MockedProvider } from "@apollo/client/testing";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import App from "./App.jsx";
+import App from "../../App.jsx";
+import { GET_TEAMS } from "../../graphql/queries/teamQueries";
 
-function renderApp(initialEntries = ["/"]) {
+const dashboardMocks = [
+  {
+    request: {
+      query: GET_TEAMS,
+    },
+    result: {
+      data: {
+        teams: [{ id: "1", name: "Engineering" }],
+      },
+    },
+  },
+];
+
+function renderApp(initialEntries = ["/"], mocks = []) {
   render(
-    <MockedProvider mocks={[]}>
+    <MockedProvider mocks={mocks}>
       <MemoryRouter initialEntries={initialEntries}>
         <App />
       </MemoryRouter>
@@ -45,13 +59,13 @@ describe("App states", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("renders the dashboard for authenticated users", () => {
+  it("renders the dashboard for authenticated users", async () => {
     localStorage.setItem("token", "test-token");
 
-    renderApp(["/dashboard"]);
+    renderApp(["/dashboard"], dashboardMocks);
 
     expect(
-      screen.getByRole("heading", { name: "Dashboard" }),
+      await screen.findByRole("heading", { name: "Dashboard" }),
     ).toBeInTheDocument();
   });
 });

@@ -2,9 +2,9 @@ import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MockedProvider } from "@apollo/client/testing";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
-import { LOGIN, REGISTER } from "./graphql/mutations/authMutation";
-import Login from "./Pages/Login";
-import Register from "./Pages/Register";
+import { LOGIN, REGISTER } from "../../graphql/mutations/authMutation";
+import Login from "../../Pages/Login";
+import Register from "../../Pages/Register";
 
 const validLogin = {
   email: "ragnar@gmail.com",

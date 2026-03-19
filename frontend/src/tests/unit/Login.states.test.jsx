@@ -13,7 +13,7 @@ vi.mock("@apollo/client", async () => {
   };
 });
 
-import Login from "./Pages/Login";
+import Login from "../../Pages/Login";
 
 function renderLogin() {
   render(

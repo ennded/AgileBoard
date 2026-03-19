@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { print } from "graphql";
 
-import { CREATE_USER } from "./userMutations";
+import { CREATE_USER } from "../../graphql/mutations/userMutations";
 
 describe("CREATE_USER mutation", () => {
   it("requests the created user fields", () => {
