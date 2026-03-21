@@ -67,13 +67,15 @@ function Project() {
       <div className="bg-white p-4 rounded shadow">
         <h2 className="font-semibold mb-3">Projects</h2>
         <ul className="space-y-2">
-          {data.projects.map((project) => (
-            <li
-              key={project.id}
-              onClick={() => navigate(`/project/${project.id}`)}
-              className="p-2 border rounded cursor-pointer hover:bg-gray-100"
-            >
-              {project.name}
+          {projects.map((project) => (
+            <li key={project.id}>
+              <button
+                type="button"
+                onClick={() => navigate(`/project/${project.id}`)}
+                className="w-full p-2 border rounded cursor-pointer text-left hover:bg-gray-100"
+              >
+                {project.name}
+              </button>
             </li>
           ))}
         </ul>

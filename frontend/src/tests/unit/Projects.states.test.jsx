@@ -39,6 +39,7 @@ function renderProjects({
     <MemoryRouter initialEntries={[`/team/${teamId}`]}>
       <Routes>
         <Route path="/team/:teamId" element={<Project />} />
+        <Route path="/project/:projectId" element={<p>Task board page</p>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -84,6 +85,16 @@ describe("Projects states", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Roadmap")).toBeInTheDocument();
     expect(screen.getByText("Backlog")).toBeInTheDocument();
+  });
+
+  it("navigates to the task board when a project is clicked", async () => {
+    renderProjects({
+      projects: [{ id: "1", name: "Roadmap" }],
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Roadmap" }));
+
+    expect(await screen.findByText("Task board page")).toBeInTheDocument();
   });
 
   it("updates the project input as the user types", () => {
