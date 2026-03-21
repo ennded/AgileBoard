@@ -67,9 +67,6 @@ const assignTask = async (taskId, userId) => {
 
 const getTaskBoard = async (projectId) => {
   const tasks = await Task.find({ project: projectId });
-  if (!tasks) {
-    throw new error("Task not found");
-  }
 
   const board = {
     todo: [],
@@ -78,11 +75,11 @@ const getTaskBoard = async (projectId) => {
   };
 
   tasks.forEach((task) => {
-    if (task.status === "ToDo") {
+    if (task.status === "TODO") {
       board.todo.push(task);
-    } else if (task.status === "inProgress") {
+    } else if (task.status === "IN_PROGRESS") {
       board.inProgress.push(task);
-    } else if (task.status === "done") {
+    } else if (task.status === "DONE") {
       board.done.push(task);
     }
   });
