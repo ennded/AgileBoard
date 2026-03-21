@@ -1,11 +1,12 @@
 import { useMutation, useQuery } from "@apollo/client";
 import React from "react";
 import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { GET_PROJECTS } from "../graphql/queries/projectQueries";
 import { CREATE_PROJECT } from "../graphql/mutations/projectMutations";
 
 function Project() {
+  const navigate = useNavigate();
   const { teamId } = useParams();
   const [projectName, setProjectName] = useState("");
 
@@ -13,8 +14,10 @@ function Project() {
     variables: { teamId },
   });
 
-  const [createProject, { loading: creatingProject, error: createProjectError }] =
-    useMutation(CREATE_PROJECT);
+  const [
+    createProject,
+    { loading: creatingProject, error: createProjectError },
+  ] = useMutation(CREATE_PROJECT);
   const projects = data?.projects ?? [];
 
   const handleCreateProject = async () => {
@@ -65,8 +68,14 @@ function Project() {
         <h2 className="font-semibold mb-3">Projects</h2>
         <ul className="space-y-2">
           {projects.map((project) => (
-            <li key={project.id} className="p-2 border rounded">
-              {project.name}
+            <li key={project.id}>
+              <button
+                type="button"
+                onClick={() => navigate(`/project/${project.id}`)}
+                className="w-full p-2 border rounded cursor-pointer text-left hover:bg-gray-100"
+              >
+                {project.name}
+              </button>
             </li>
           ))}
         </ul>
