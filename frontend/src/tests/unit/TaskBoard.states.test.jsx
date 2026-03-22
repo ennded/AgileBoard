@@ -3,7 +3,10 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { vi } from "vitest";
 import { GET_TASK_BOARD } from "../../graphql/queries/taskQueries";
-import { CREATE_TASK } from "../../graphql/mutations/taskMutations";
+import {
+  CREATE_TASK,
+  UPDATE_TASK_STATUS,
+} from "../../graphql/mutations/taskMutations";
 
 const useQueryMock = vi.fn();
 const useMutationMock = vi.fn();
@@ -29,7 +32,9 @@ function renderTaskBoard({
   },
   refetch = vi.fn(),
   createTask = vi.fn(),
-  mutationState = {},
+  createMutationState = {},
+  updateTaskStatus = vi.fn(),
+  updateMutationState = {},
   projectId = "project-1",
 } = {}) {
   useQueryMock.mockReturnValue({
@@ -39,7 +44,17 @@ function renderTaskBoard({
     refetch,
   });
 
-  useMutationMock.mockReturnValue([createTask, mutationState]);
+  useMutationMock.mockImplementation((mutation) => {
+    if (mutation === UPDATE_TASK_STATUS) {
+      return [updateTaskStatus, updateMutationState];
+    }
+
+    if (mutation === CREATE_TASK) {
+      return [createTask, createMutationState];
+    }
+
+    throw new Error("Unexpected mutation");
+  });
 
   render(
     <MemoryRouter initialEntries={[`/project/${projectId}`]}>
@@ -49,7 +64,7 @@ function renderTaskBoard({
     </MemoryRouter>,
   );
 
-  return { createTask, refetch };
+  return { createTask, refetch, updateTaskStatus };
 }
 
 describe("TaskBoard states", () => {
@@ -76,7 +91,8 @@ describe("TaskBoard states", () => {
     expect(useQueryMock).toHaveBeenCalledWith(GET_TASK_BOARD, {
       variables: { projectId: "project-77" },
     });
-    expect(useMutationMock).toHaveBeenCalledWith(CREATE_TASK);
+    expect(useMutationMock).toHaveBeenNthCalledWith(1, UPDATE_TASK_STATUS);
+    expect(useMutationMock).toHaveBeenNthCalledWith(2, CREATE_TASK);
   });
 
   it("renders the heading, columns, and tasks returned by the query", () => {
@@ -129,6 +145,19 @@ describe("TaskBoard states", () => {
     expect(createTask).not.toHaveBeenCalled();
   });
 
+  it("does not call the create task mutation when the title is only spaces", () => {
+    const createTask = vi.fn();
+
+    renderTaskBoard({ createTask });
+
+    fireEvent.change(screen.getByPlaceholderText("Task title"), {
+      target: { value: "   " },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Add" }));
+
+    expect(createTask).not.toHaveBeenCalled();
+  });
+
   it("creates a task, clears the input and refetches the board", async () => {
     const createTask = vi.fn().mockResolvedValue({
       data: {
@@ -140,7 +169,7 @@ describe("TaskBoard states", () => {
     renderTaskBoard({ createTask, refetch, projectId: "project-99" });
 
     fireEvent.change(screen.getByPlaceholderText("Task title"), {
-      target: { value: "Ship notifications" },
+      target: { value: "  Ship notifications  " },
     });
     fireEvent.click(screen.getByRole("button", { name: "Add" }));
 
@@ -156,6 +185,73 @@ describe("TaskBoard states", () => {
     await waitFor(() => {
       expect(refetch).toHaveBeenCalled();
       expect(screen.getByPlaceholderText("Task title")).toHaveValue("");
+    });
+  });
+
+  it("shows the adding state while the create mutation is running", () => {
+    renderTaskBoard({
+      createMutationState: { loading: true },
+    });
+
+    expect(
+      screen.getByRole("button", { name: "Adding..." }),
+    ).toBeDisabled();
+  });
+
+  it("shows a create-task error message when the mutation fails", async () => {
+    const createTask = vi.fn().mockRejectedValue(new Error("Create failed"));
+
+    renderTaskBoard({ createTask });
+
+    fireEvent.change(screen.getByPlaceholderText("Task title"), {
+      target: { value: "Ship notifications" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Add" }));
+
+    expect(
+      await screen.findByText("Create failed"),
+    ).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Task title")).toHaveValue(
+      "Ship notifications",
+    );
+  });
+
+  it("shows a create-task error from the mutation state", () => {
+    renderTaskBoard({
+      createMutationState: { error: new Error("Backend rejected task") },
+    });
+
+    expect(screen.getByText("Backend rejected task")).toBeInTheDocument();
+  });
+
+  it("updates a task status and refetches the board", async () => {
+    const updateTaskStatus = vi.fn().mockResolvedValue({
+      data: {
+        UpdateTaskStatus: { id: "1", status: "IN_PROGRESS" },
+      },
+    });
+    const refetch = vi.fn().mockResolvedValue({});
+
+    renderTaskBoard({
+      updateTaskStatus,
+      refetch,
+      taskBoard: {
+        todo: [{ id: "1", title: "Write specs" }],
+        inProgress: [],
+        done: [],
+      },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "In Progress" }));
+
+    await waitFor(() => {
+      expect(updateTaskStatus).toHaveBeenCalledWith({
+        variables: { taskId: "1", status: "IN_PROGRESS" },
+      });
+    });
+
+    await waitFor(() => {
+      expect(refetch).toHaveBeenCalled();
     });
   });
 });
