@@ -2,21 +2,24 @@ const Task = require("../models/Task");
 const notificationService = require("../services/notificationService");
 
 const createTask = async (data, user) => {
+  const assignedUserId = data.assignedTo || user._id;
   const task = new Task({
     title: data.title,
     description: data.description,
     project: data.projectId,
-    assignedTo: data.assignedTo,
+    assignedTo: assignedUserId,
     createdBy: user._id,
   });
 
   await task.save();
 
-  await notificationService.createNotification({
-    userId: data.assignedTo,
-    type: "TASK_ASSIGNED",
-    message: `You were assigned a task: ${task.title}`,
-  });
+  if (assignedUserId) {
+    await notificationService.createNotification({
+      userId: assignedUserId,
+      type: "TASK_ASSIGNED",
+      message: `You were assigned a task: ${task.title}`,
+    });
+  }
 
   return task;
 };

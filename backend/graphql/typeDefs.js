@@ -16,7 +16,7 @@ module.exports = gql`
   type Task {
     id: ID!
     title: String!
-    description: String!
+    description: String
     status: TaskStatus
     project: Project
     assignedTo: User
@@ -80,9 +80,9 @@ module.exports = gql`
     createProject(name: String!, teamId: ID!): Project
     createTask(
       title: String!
-      description: String!
+      description: String
       projectId: ID!
-      assignedTo: ID!
+      assignedTo: ID
     ): Task
     updateTaskStatus(taskId: ID!, status: TaskStatus!): Task
     assignTask(taskId: ID!, userId: ID!): Task
