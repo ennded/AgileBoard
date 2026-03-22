@@ -13,17 +13,18 @@ function Register() {
   const [register, { loading, error }] = useMutation(REGISTER);
 
   const handleRegister = async () => {
-    try {
-      const res = await register({
-        variables: { name, email, password },
-      });
+    const res = await register({
+      variables: { name, email, password },
+    }).catch(() => null);
 
-      const token = res.data.register.token;
-      localStorage.setItem("token", token);
-      navigate("/dashboard");
-    } catch (error) {
-      console.log(error);
+    const token = res?.data?.register?.token;
+
+    if (!token) {
+      return;
     }
+
+    localStorage.setItem("token", token);
+    navigate("/dashboard");
   };
 
   return (

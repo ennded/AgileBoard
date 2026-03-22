@@ -23,18 +23,19 @@ function Project() {
   const handleCreateProject = async () => {
     if (!projectName) return;
 
-    try {
-      await createProject({
-        variables: {
-          name: projectName,
-          teamId,
-        },
-      });
-      setProjectName("");
-      await refetch();
-    } catch (error) {
-      console.log(error);
+    const res = await createProject({
+      variables: {
+        name: projectName,
+        teamId,
+      },
+    }).catch(() => null);
+
+    if (!res?.data?.createProject) {
+      return;
     }
+
+    setProjectName("");
+    await refetch();
   };
 
   if (loading) return <p className="p-4">Loading..</p>;
