@@ -19,6 +19,15 @@ vi.mock("@apollo/client", async () => {
 
 import TaskDetails from "../../Pages/TaskDetails";
 
+function formatExpectedCommentTime(createdAt) {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(createdAt));
+}
+
 function renderTaskDetails({
   loading = false,
   error = undefined,
@@ -90,6 +99,27 @@ describe("TaskDetails states", () => {
     expect(screen.getByText("Lagertha")).toBeInTheDocument();
     expect(screen.getByText("Looks good")).toBeInTheDocument();
     expect(screen.getByText("Ship it")).toBeInTheDocument();
+  });
+
+  it("formats long task ids and comment timestamps for the issue view", () => {
+    const createdAt = "2026-03-23T10:15:00.000Z";
+
+    renderTaskDetails({
+      taskId: "1234567890abcdef",
+      comments: [
+        {
+          id: "1",
+          message: "Looks good",
+          createdAt,
+          user: { name: "Ragnar" },
+        },
+      ],
+    });
+
+    expect(screen.getAllByText("TASK-12345678")).toHaveLength(2);
+    expect(
+      screen.getByText(formatExpectedCommentTime(createdAt)),
+    ).toBeInTheDocument();
   });
 
   it("updates the comment input as the user types", () => {

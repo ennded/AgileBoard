@@ -256,6 +256,37 @@ describe("TaskBoard states", () => {
     });
   });
 
+  it("updates a task to done and refetches the board", async () => {
+    const updateTaskStatus = vi.fn().mockResolvedValue({
+      data: {
+        UpdateTaskStatus: { id: "2", status: "DONE" },
+      },
+    });
+    const refetch = vi.fn().mockResolvedValue({});
+
+    renderTaskBoard({
+      updateTaskStatus,
+      refetch,
+      taskBoard: {
+        todo: [],
+        inProgress: [{ id: "2", title: "Build board" }],
+        done: [],
+      },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+
+    await waitFor(() => {
+      expect(updateTaskStatus).toHaveBeenCalledWith({
+        variables: { taskId: "2", status: "DONE" },
+      });
+    });
+
+    await waitFor(() => {
+      expect(refetch).toHaveBeenCalled();
+    });
+  });
+
   it("navigates to the task details page when a task title is clicked", async () => {
     renderTaskBoard({
       taskBoard: {
@@ -267,6 +298,32 @@ describe("TaskBoard states", () => {
 
     fireEvent.click(screen.getByText("Write specs"));
 
+    expect(await screen.findByText("Task details page")).toBeInTheDocument();
+  });
+
+  it("navigates to the task details page from the in-progress column", async () => {
+    renderTaskBoard({
+      taskBoard: {
+        todo: [],
+        inProgress: [{ id: "2", title: "Build board" }],
+        done: [],
+      },
+    });
+
+    fireEvent.click(screen.getByText("Build board"));
+    expect(await screen.findByText("Task details page")).toBeInTheDocument();
+  });
+
+  it("navigates to the task details page from the done column", async () => {
+    renderTaskBoard({
+      taskBoard: {
+        todo: [],
+        inProgress: [],
+        done: [{ id: "3", title: "Set up project" }],
+      },
+    });
+
+    fireEvent.click(screen.getByText("Set up project"));
     expect(await screen.findByText("Task details page")).toBeInTheDocument();
   });
 });
