@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useMutation, useQuery } from "@apollo/client";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { GET_TASK_BOARD } from "../graphql/queries/taskQueries";
 import {
   CREATE_TASK,
@@ -8,6 +8,7 @@ import {
 } from "../graphql/mutations/taskMutations";
 
 function TaskBoard() {
+  const navigate = useNavigate();
   const [title, setTitle] = useState("");
   const [updateTaskStatus] = useMutation(UPDATE_TASK_STATUS);
   const [submitError, setSubmitError] = useState("");
@@ -81,13 +82,24 @@ function TaskBoard() {
         )}
       </div>
       <div className="grid grid-cols-3 gap-4">
-        <Column title="Todo" tasks={todo} onStatusChange={handleStatusChange} />
+        <Column
+          title="Todo"
+          tasks={todo}
+          onStatusChange={handleStatusChange}
+          onOpenTask={(taskId) => navigate(`/task/${taskId}`)}
+        />
         <Column
           title="In Progress"
           tasks={inProgress}
           onStatusChange={handleStatusChange}
+          onOpenTask={(taskId) => navigate(`/task/${taskId}`)}
         />
-        <Column title="Done" tasks={done} onStatusChange={handleStatusChange} />
+        <Column
+          title="Done"
+          tasks={done}
+          onStatusChange={handleStatusChange}
+          onOpenTask={(taskId) => navigate(`/task/${taskId}`)}
+        />
       </div>
     </div>
   );
@@ -95,14 +107,19 @@ function TaskBoard() {
 
 export default TaskBoard;
 
-function Column({ title, tasks, onStatusChange }) {
+function Column({ title, tasks, onStatusChange, onOpenTask }) {
   return (
     <div className="bg-white p-4 rounded shadow ">
       <h3 className="font-bold mb-3">{title}</h3>
       <div className="space-y-2">
         {tasks.map((task) => (
           <div key={task.id} className="p-3 bg-gray-100 rounded shadow-sm">
-            <p className="mb-2">{task.title}</p>
+            <p
+              onClick={() => onOpenTask(task.id)}
+              className="mb-2 cursor-pointer"
+            >
+              {task.title}
+            </p>
             <div>
               <button
                 onClick={() => onStatusChange(task.id, "IN_PROGRESS")}

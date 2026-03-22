@@ -60,6 +60,7 @@ function renderTaskBoard({
     <MemoryRouter initialEntries={[`/project/${projectId}`]}>
       <Routes>
         <Route path="/project/:projectId" element={<TaskBoard />} />
+        <Route path="/task/:taskId" element={<p>Task details page</p>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -253,5 +254,19 @@ describe("TaskBoard states", () => {
     await waitFor(() => {
       expect(refetch).toHaveBeenCalled();
     });
+  });
+
+  it("navigates to the task details page when a task title is clicked", async () => {
+    renderTaskBoard({
+      taskBoard: {
+        todo: [{ id: "1", title: "Write specs" }],
+        inProgress: [],
+        done: [],
+      },
+    });
+
+    fireEvent.click(screen.getByText("Write specs"));
+
+    expect(await screen.findByText("Task details page")).toBeInTheDocument();
   });
 });

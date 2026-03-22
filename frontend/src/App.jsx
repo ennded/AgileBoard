@@ -6,6 +6,7 @@ import ProtectedRoute from "./component/ProtectedRoute";
 import React from "react";
 import Project from "./Pages/Projects";
 import TaskBoard from "./Pages/TaskBoard";
+import TaskDetails from "./Pages/TaskDetails";
 
 function App() {
   return (
@@ -33,6 +34,14 @@ function App() {
         element={
           <ProtectedRoute>
             <TaskBoard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/task/:taskId"
+        element={
+          <ProtectedRoute>
+            <TaskDetails />
           </ProtectedRoute>
         }
       />
