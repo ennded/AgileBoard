@@ -212,4 +212,80 @@ describe("TaskDetails states", () => {
       "Please update the copy",
     );
   });
+
+  it("shows a fallback error when the mutation rejects without a message", async () => {
+    const addComment = vi.fn().mockRejectedValue({});
+
+    renderTaskDetails({ addComment });
+
+    fireEvent.change(screen.getByPlaceholderText("Write a comment..."), {
+      target: { value: "Please update the copy" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Add" }));
+
+    expect(
+      await screen.findByText("Unable to add comment right now."),
+    ).toBeInTheDocument();
+  });
+
+  it("shows the mutation error from apollo when present", () => {
+    renderTaskDetails({
+      mutationState: { error: new Error("Apollo mutation error") },
+    });
+
+    expect(
+      screen.getByText("Apollo mutation error"),
+    ).toBeInTheDocument();
+  });
+
+  it("shows Unknown User when the comment has no user name", () => {
+    renderTaskDetails({
+      comments: [{ id: "1", message: "No name comment", user: { name: null } }],
+    });
+
+    expect(screen.getByText("Unknown User")).toBeInTheDocument();
+  });
+
+  it("shows Just now when a comment has no createdAt", () => {
+    renderTaskDetails({
+      comments: [{ id: "1", message: "No timestamp", user: { name: "Bob" } }],
+    });
+
+    expect(screen.getAllByText("Just now").length).toBeGreaterThan(0);
+  });
+
+  it("shows Just now when a comment has an invalid createdAt date", () => {
+    renderTaskDetails({
+      comments: [
+        {
+          id: "1",
+          message: "Bad date comment",
+          createdAt: "not-a-date",
+          user: { name: "Bob" },
+        },
+      ],
+    });
+
+    expect(screen.getAllByText("Just now").length).toBeGreaterThan(0);
+  });
+
+  it("renders an empty comment list when data has no comments field", () => {
+    useQueryMock.mockReturnValue({
+      data: { comments: null },
+      loading: false,
+      error: undefined,
+      refetch: vi.fn(),
+    });
+    useMutationMock.mockReturnValue([vi.fn(), {}]);
+
+    render(
+      <MemoryRouter initialEntries={["/task/task-1"]}>
+        <Routes>
+          <Route path="/task/:taskId" element={<TaskDetails />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText("No comments yet")).toBeInTheDocument();
+  });
 });
