@@ -1,5 +1,5 @@
 import React from "react";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { vi } from "vitest";
 import { GET_TASK_BOARD } from "../../graphql/queries/taskQueries";
@@ -10,6 +10,8 @@ import {
 
 const useQueryMock = vi.fn();
 const useMutationMock = vi.fn();
+const navigateMock = vi.fn();
+let latestDragEndHandler;
 
 vi.mock("@apollo/client", async () => {
   const actual = await vi.importActual("@apollo/client");
@@ -20,7 +22,52 @@ vi.mock("@apollo/client", async () => {
   };
 });
 
+vi.mock("react-router-dom", async () => {
+  const actual = await vi.importActual("react-router-dom");
+  return {
+    ...actual,
+    useNavigate: () => navigateMock,
+  };
+});
+
+vi.mock("@dnd-kit/core", async () => {
+  const ReactModule = await vi.importActual("react");
+
+  return {
+    DndContext: ({ children, onDragEnd }) => {
+      latestDragEndHandler = onDragEnd;
+      return ReactModule.createElement("div", null, children);
+    },
+    pointerWithin: vi.fn(),
+    useDraggable: () => ({
+      attributes: {},
+      listeners: {},
+      setNodeRef: vi.fn(),
+      transform: null,
+      isDragging: false,
+    }),
+    useDroppable: () => ({
+      setNodeRef: vi.fn(),
+      isOver: false,
+    }),
+  };
+});
+
 import TaskBoard from "../../Pages/TaskBoard";
+
+function expectStatusUpdateCall(updateTaskStatus, { taskId, status, projectId }) {
+  expect(updateTaskStatus).toHaveBeenCalledWith({
+    variables: { taskId, status },
+    refetchQueries: [{ query: GET_TASK_BOARD, variables: { projectId } }],
+    awaitRefetchQueries: true,
+  });
+}
+
+async function triggerDragEnd(event) {
+  await act(async () => {
+    await latestDragEndHandler?.(event);
+  });
+}
 
 function renderTaskBoard({
   loading = false,
@@ -71,6 +118,8 @@ describe("TaskBoard states", () => {
   beforeEach(() => {
     useQueryMock.mockReset();
     useMutationMock.mockReset();
+    navigateMock.mockReset();
+    latestDragEndHandler = undefined;
   });
 
   it("shows a loading message while the task board is loading", () => {
@@ -83,6 +132,12 @@ describe("TaskBoard states", () => {
     renderTaskBoard({ error: new Error("Query failed") });
 
     expect(screen.getByText("Error loading task board.")).toBeInTheDocument();
+  });
+
+  it("shows a not-found message when the project has no task board", () => {
+    renderTaskBoard({ taskBoard: null });
+
+    expect(screen.getByText("Project not found.")).toBeInTheDocument();
   });
 
   it("queries the task board using the project id from the route", () => {
@@ -119,6 +174,20 @@ describe("TaskBoard states", () => {
     expect(screen.getByText("Write specs")).toBeInTheDocument();
     expect(screen.getByText("Build board")).toBeInTheDocument();
     expect(screen.getByText("Set up project")).toBeInTheDocument();
+  });
+
+  it("navigates to the task details when a task title is clicked", () => {
+    renderTaskBoard({
+      taskBoard: {
+        todo: [{ id: "1", title: "Write specs" }],
+        inProgress: [],
+        done: [],
+      },
+    });
+
+    fireEvent.click(screen.getByText("Write specs"));
+
+    expect(navigateMock).toHaveBeenCalledWith("/task/1");
   });
 
   it("renders the create task form and updates the input as the user types", () => {
@@ -224,12 +293,36 @@ describe("TaskBoard states", () => {
     expect(screen.getByText("Backend rejected task")).toBeInTheDocument();
   });
 
-  it("updates a task status and refetches the board", async () => {
+  it("updates a task status with a board refetch query", async () => {
     const updateTaskStatus = vi.fn().mockResolvedValue({
       data: {
         UpdateTaskStatus: { id: "1", status: "IN_PROGRESS" },
       },
     });
+
+    renderTaskBoard({
+      updateTaskStatus,
+      taskBoard: {
+        todo: [{ id: "1", title: "Write specs" }],
+        inProgress: [],
+        done: [],
+      },
+      projectId: "project-42",
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "In Progress" }));
+
+    await waitFor(() => {
+      expectStatusUpdateCall(updateTaskStatus, {
+        taskId: "1",
+        status: "IN_PROGRESS",
+        projectId: "project-42",
+      });
+    });
+  });
+
+  it("refetches the board when a status update fails", async () => {
+    const updateTaskStatus = vi.fn().mockRejectedValue(new Error("Update failed"));
     const refetch = vi.fn().mockResolvedValue({});
 
     renderTaskBoard({
@@ -245,13 +338,58 @@ describe("TaskBoard states", () => {
     fireEvent.click(screen.getByRole("button", { name: "In Progress" }));
 
     await waitFor(() => {
-      expect(updateTaskStatus).toHaveBeenCalledWith({
-        variables: { taskId: "1", status: "IN_PROGRESS" },
-      });
+      expect(refetch).toHaveBeenCalled();
+    });
+  });
+
+  it("updates a task status when a card is dropped in a new column", async () => {
+    const updateTaskStatus = vi.fn().mockResolvedValue({
+      data: {
+        UpdateTaskStatus: { id: "1", status: "DONE" },
+      },
+    });
+
+    renderTaskBoard({
+      updateTaskStatus,
+      taskBoard: {
+        todo: [{ id: "1", title: "Write specs" }],
+        inProgress: [],
+        done: [],
+      },
+      projectId: "project-88",
+    });
+
+    await triggerDragEnd({
+      active: { id: "1" },
+      over: { id: "DONE" },
     });
 
     await waitFor(() => {
-      expect(refetch).toHaveBeenCalled();
+      expectStatusUpdateCall(updateTaskStatus, {
+        taskId: "1",
+        status: "DONE",
+        projectId: "project-88",
+      });
     });
+  });
+
+  it("does not update task status when a card is dropped outside a column", async () => {
+    const updateTaskStatus = vi.fn();
+
+    renderTaskBoard({
+      updateTaskStatus,
+      taskBoard: {
+        todo: [{ id: "1", title: "Write specs" }],
+        inProgress: [],
+        done: [],
+      },
+    });
+
+    await triggerDragEnd({
+      active: { id: "1" },
+      over: null,
+    });
+
+    expect(updateTaskStatus).not.toHaveBeenCalled();
   });
 });

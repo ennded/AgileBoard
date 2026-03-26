@@ -1,13 +1,59 @@
 import React, { useState } from "react";
 import { useMutation, useQuery } from "@apollo/client";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { GET_TASK_BOARD } from "../graphql/queries/taskQueries";
 import {
   CREATE_TASK,
   UPDATE_TASK_STATUS,
 } from "../graphql/mutations/taskMutations";
+import { pointerWithin, DndContext, useDraggable, useDroppable } from "@dnd-kit/core";
+
+const STATUS_MAP = {
+  "Todo": "TODO",
+  "In Progress": "IN_PROGRESS",
+  "Done": "DONE",
+};
+
+function TaskCard({ task, onOpenTask, onStatusChange }) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: task.id,
+  });
+
+  const style = transform
+    ? { transform: `translate(${transform.x}px, ${transform.y}px)`, opacity: isDragging ? 0.5 : 1 }
+    : undefined;
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...listeners}
+      {...attributes}
+      className="p-3 bg-gray-100 rounded shadow-sm cursor-grab"
+    >
+      <p onClick={() => onOpenTask(task.id)} className="mb-2 cursor-pointer">
+        {task.title}
+      </p>
+      <div>
+        <button
+          onClick={() => onStatusChange(task.id, "IN_PROGRESS")}
+          className="text-xs bg-yellow-400 px-2 py-1 rounded"
+        >
+          In Progress
+        </button>
+        <button
+          onClick={() => onStatusChange(task.id, "DONE")}
+          className="text-sm bg-green-500 text-white px-2 py-1 rounded"
+        >
+          Done
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function TaskBoard() {
+  const navigate = useNavigate();
   const [title, setTitle] = useState("");
   const [updateTaskStatus] = useMutation(UPDATE_TASK_STATUS);
   const [submitError, setSubmitError] = useState("");
@@ -21,6 +67,8 @@ function TaskBoard() {
   if (loading) return <p className="p-4">Loading...</p>;
   if (error)
     return <p className="p-4 text-red-500">Error loading task board.</p>;
+  if (!data?.taskBoard)
+    return <p className="p-4 text-red-500">Project not found.</p>;
 
   const { todo, inProgress, done } = data.taskBoard;
 
@@ -46,11 +94,36 @@ function TaskBoard() {
     }
   };
 
+  const handleDragEnd = async (event) => {
+    const { active, over } = event;
+    if (!over) return;
+
+    const taskId = active.id;
+    const newStatus = over.id;
+
+    if (!taskId || !newStatus) return;
+
+    try {
+      await updateTaskStatus({
+        variables: { taskId, status: newStatus },
+        refetchQueries: [{ query: GET_TASK_BOARD, variables: { projectId } }],
+        awaitRefetchQueries: true,
+      });
+    } catch (err) {
+      refetch();
+    }
+  };
+
   const handleStatusChange = async (taskId, status) => {
-    await updateTaskStatus({
-      variables: { taskId, status },
-    });
-    refetch();
+    try {
+      await updateTaskStatus({
+        variables: { taskId, status },
+        refetchQueries: [{ query: GET_TASK_BOARD, variables: { projectId } }],
+        awaitRefetchQueries: true,
+      });
+    } catch (err) {
+      refetch();
+    }
   };
 
   const createErrorMessage =
@@ -80,44 +153,52 @@ function TaskBoard() {
           <p className="mt-2 text-sm text-red-500">{createErrorMessage}</p>
         )}
       </div>
-      <div className="grid grid-cols-3 gap-4">
-        <Column title="Todo" tasks={todo} onStatusChange={handleStatusChange} />
-        <Column
-          title="In Progress"
-          tasks={inProgress}
-          onStatusChange={handleStatusChange}
-        />
-        <Column title="Done" tasks={done} onStatusChange={handleStatusChange} />
-      </div>
+      <DndContext collisionDetection={pointerWithin} onDragEnd={handleDragEnd}>
+        <div className="grid grid-cols-3 gap-4">
+          <Column
+            title="Todo"
+            tasks={todo}
+            onStatusChange={handleStatusChange}
+            onOpenTask={(taskId) => navigate(`/task/${taskId}`)}
+          />
+          <Column
+            title="In Progress"
+            tasks={inProgress}
+            onStatusChange={handleStatusChange}
+            onOpenTask={(taskId) => navigate(`/task/${taskId}`)}
+          />
+          <Column
+            title="Done"
+            tasks={done}
+            onStatusChange={handleStatusChange}
+            onOpenTask={(taskId) => navigate(`/task/${taskId}`)}
+          />
+        </div>
+      </DndContext>
     </div>
   );
 }
 
 export default TaskBoard;
 
-function Column({ title, tasks, onStatusChange }) {
+function Column({ title, tasks, onStatusChange, onOpenTask }) {
+  const statusId = STATUS_MAP[title];
+  const { setNodeRef, isOver } = useDroppable({ id: statusId });
+
   return (
-    <div className="bg-white p-4 rounded shadow ">
+    <div
+      ref={setNodeRef}
+      className={`bg-white p-4 rounded shadow min-h-[200px] transition-colors ${isOver ? "bg-blue-50" : ""}`}
+    >
       <h3 className="font-bold mb-3">{title}</h3>
       <div className="space-y-2">
         {tasks.map((task) => (
-          <div key={task.id} className="p-3 bg-gray-100 rounded shadow-sm">
-            <p className="mb-2">{task.title}</p>
-            <div>
-              <button
-                onClick={() => onStatusChange(task.id, "IN_PROGRESS")}
-                className="text-xs bg-yellow-400 px-2 py-1 rounded"
-              >
-                In Progress
-              </button>
-              <button
-                onClick={() => onStatusChange(task.id, "DONE")}
-                className="text-sm bg-green-500 text-white px-2 py-1 rounded"
-              >
-                Done
-              </button>
-            </div>
-          </div>
+          <TaskCard
+            key={task.id}
+            task={task}
+            onOpenTask={onOpenTask}
+            onStatusChange={onStatusChange}
+          />
         ))}
       </div>
     </div>

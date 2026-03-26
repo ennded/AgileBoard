@@ -16,7 +16,7 @@ export const CREATE_TASK = gql`
 
 export const UPDATE_TASK_STATUS = gql`
   mutation UpdateTaskStatus($taskId: ID!, $status: TaskStatus!) {
-    UpdateTaskStatus(taskId: $taskId, status: $status) {
+    updateTaskStatus(taskId: $taskId, status: $status) {
       id
       status
     }

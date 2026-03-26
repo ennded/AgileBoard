@@ -9,7 +9,7 @@ services:
     build: ./backend
     container_name: graphql-backend
     ports:
-      - "5001:5001"
+      - "5003:5003"
     depends_on:
       - mongo
     environment:
