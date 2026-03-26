@@ -17,16 +17,16 @@ function Dashboard() {
       return;
     }
 
-    try {
-      await createTeam({
-        variables: { name: teamName },
-      });
+    const res = await createTeam({
+      variables: { name: teamName },
+    }).catch(() => null);
 
-      setTeamName("");
-      await refetch();
-    } catch (error) {
-      console.log(error);
+    if (!res?.data?.createTeam) {
+      return;
     }
+
+    setTeamName("");
+    await refetch();
   };
 
   if (loading) return <p className="p-4">Loading...</p>;
