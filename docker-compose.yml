@@ -2,14 +2,14 @@ services:
   mongo:
     image: mongo
     container_name: mongodb
-    ports:
-      - "27017:27017"
-  
+    volumes:
+      - mongo-data:/data/db
+
   backend:
     build: ./backend
     container_name: graphql-backend
     ports:
-      - "5003:5003"
+      - "5001:5001"
     depends_on:
       - mongo
     environment:
@@ -18,17 +18,16 @@ services:
     volumes:
       - ./backend:/app
       - /app/node_modules
-  
+
   frontend:
     build: ./frontend
     ports:
       - "5173:5173"
     depends_on:
       - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
 
-      
 volumes:
   mongo-data:
-  
-
-  
