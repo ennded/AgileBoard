@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import PropTypes from "prop-types";
 import { useMutation, useQuery } from "@apollo/client";
 import { useNavigate, useParams } from "react-router-dom";
 import { GET_TASK_BOARD } from "../graphql/queries/taskQueries";
@@ -6,6 +7,87 @@ import {
   CREATE_TASK,
   UPDATE_TASK_STATUS,
 } from "../graphql/mutations/taskMutations";
+import { pointerWithin, DndContext, useDraggable, useDroppable } from "@dnd-kit/core";
+
+const STATUS_MAP = {
+  "Todo": "TODO",
+  "In Progress": "IN_PROGRESS",
+  "Done": "DONE",
+};
+
+const BOARD_COLUMNS = [
+  { title: "Todo", key: "todo" },
+  { title: "In Progress", key: "inProgress" },
+  { title: "Done", key: "done" },
+];
+
+const STATUS_ACTIONS = [
+  {
+    label: "In Progress",
+    status: "IN_PROGRESS",
+    className: "text-xs bg-yellow-400 px-2 py-1 rounded",
+  },
+  {
+    label: "Done",
+    status: "DONE",
+    className: "text-sm bg-green-500 text-white px-2 py-1 rounded",
+  },
+];
+
+const taskShape = PropTypes.shape({
+  id: PropTypes.string.isRequired,
+  title: PropTypes.string.isRequired,
+});
+
+function TaskCard({ task, onOpenTask, onStatusChange }) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } =
+    useDraggable({
+      id: task.id,
+    });
+
+  const style = transform
+    ? {
+        transform: `translate(${transform.x}px, ${transform.y}px)`,
+        opacity: isDragging ? 0.5 : 1,
+      }
+    : undefined;
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...listeners}
+      {...attributes}
+      className="p-3 bg-gray-100 rounded shadow-sm cursor-grab"
+    >
+      <button
+        type="button"
+        onClick={() => onOpenTask(task.id)}
+        className="mb-2 cursor-pointer text-left font-medium text-slate-900"
+      >
+        {task.title}
+      </button>
+      <div className="flex gap-2">
+        {STATUS_ACTIONS.map((action) => (
+          <button
+            key={action.status}
+            type="button"
+            onClick={() => onStatusChange(task.id, action.status)}
+            className={action.className}
+          >
+            {action.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+TaskCard.propTypes = {
+  task: taskShape.isRequired,
+  onOpenTask: PropTypes.func.isRequired,
+  onStatusChange: PropTypes.func.isRequired,
+};
 
 function TaskBoard() {
   const navigate = useNavigate();
@@ -22,8 +104,12 @@ function TaskBoard() {
   if (loading) return <p className="p-4">Loading...</p>;
   if (error)
     return <p className="p-4 text-red-500">Error loading task board.</p>;
+  if (!data?.taskBoard)
+    return <p className="p-4 text-red-500">Project not found.</p>;
 
   const { todo, inProgress, done } = data.taskBoard;
+  const tasksByColumn = { todo, inProgress, done };
+  const openTask = (taskId) => navigate(`/task/${taskId}`);
 
   const handleCreateTask = async () => {
     const trimmedTitle = title.trim();
@@ -47,11 +133,26 @@ function TaskBoard() {
     }
   };
 
+  const persistTaskStatus = async (taskId, status) => {
+    try {
+      await updateTaskStatus({
+        variables: { taskId, status },
+        refetchQueries: [{ query: GET_TASK_BOARD, variables: { projectId } }],
+        awaitRefetchQueries: true,
+      });
+    } catch {
+      refetch();
+    }
+  };
+
+  const handleDragEnd = async ({ active, over }) => {
+    if (!over || !active?.id || !over.id) return;
+
+    await persistTaskStatus(active.id, over.id);
+  };
+
   const handleStatusChange = async (taskId, status) => {
-    await updateTaskStatus({
-      variables: { taskId, status },
-    });
-    refetch();
+    await persistTaskStatus(taskId, status);
   };
 
   const createErrorMessage =
@@ -81,26 +182,19 @@ function TaskBoard() {
           <p className="mt-2 text-sm text-red-500">{createErrorMessage}</p>
         )}
       </div>
-      <div className="grid grid-cols-3 gap-4">
-        <Column
-          title="Todo"
-          tasks={todo}
-          onStatusChange={handleStatusChange}
-          onOpenTask={(taskId) => navigate(`/task/${taskId}`)}
-        />
-        <Column
-          title="In Progress"
-          tasks={inProgress}
-          onStatusChange={handleStatusChange}
-          onOpenTask={(taskId) => navigate(`/task/${taskId}`)}
-        />
-        <Column
-          title="Done"
-          tasks={done}
-          onStatusChange={handleStatusChange}
-          onOpenTask={(taskId) => navigate(`/task/${taskId}`)}
-        />
-      </div>
+      <DndContext collisionDetection={pointerWithin} onDragEnd={handleDragEnd}>
+        <div className="grid grid-cols-3 gap-4">
+          {BOARD_COLUMNS.map((column) => (
+            <Column
+              key={column.key}
+              title={column.title}
+              tasks={tasksByColumn[column.key]}
+              onStatusChange={handleStatusChange}
+              onOpenTask={openTask}
+            />
+          ))}
+        </div>
+      </DndContext>
     </div>
   );
 }
@@ -108,35 +202,34 @@ function TaskBoard() {
 export default TaskBoard;
 
 function Column({ title, tasks, onStatusChange, onOpenTask }) {
+  const statusId = STATUS_MAP[title];
+  const { setNodeRef, isOver } = useDroppable({ id: statusId });
+
   return (
-    <div className="bg-white p-4 rounded shadow ">
+    <div
+      ref={setNodeRef}
+      className={`bg-white p-4 rounded shadow min-h-[200px] transition-colors ${
+        isOver ? "bg-blue-50" : ""
+      }`}
+    >
       <h3 className="font-bold mb-3">{title}</h3>
       <div className="space-y-2">
         {tasks.map((task) => (
-          <div key={task.id} className="p-3 bg-gray-100 rounded shadow-sm">
-            <p
-              onClick={() => onOpenTask(task.id)}
-              className="mb-2 cursor-pointer"
-            >
-              {task.title}
-            </p>
-            <div>
-              <button
-                onClick={() => onStatusChange(task.id, "IN_PROGRESS")}
-                className="text-xs bg-yellow-400 px-2 py-1 rounded"
-              >
-                In Progress
-              </button>
-              <button
-                onClick={() => onStatusChange(task.id, "DONE")}
-                className="text-sm bg-green-500 text-white px-2 py-1 rounded"
-              >
-                Done
-              </button>
-            </div>
-          </div>
+          <TaskCard
+            key={task.id}
+            task={task}
+            onOpenTask={onOpenTask}
+            onStatusChange={onStatusChange}
+          />
         ))}
       </div>
     </div>
   );
 }
+
+Column.propTypes = {
+  title: PropTypes.oneOf(Object.keys(STATUS_MAP)).isRequired,
+  tasks: PropTypes.arrayOf(taskShape).isRequired,
+  onStatusChange: PropTypes.func.isRequired,
+  onOpenTask: PropTypes.func.isRequired,
+};
