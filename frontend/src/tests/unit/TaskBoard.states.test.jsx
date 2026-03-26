@@ -12,6 +12,13 @@ const useQueryMock = vi.fn();
 const useMutationMock = vi.fn();
 const navigateMock = vi.fn();
 let latestDragEndHandler;
+let draggableState = {
+  attributes: {},
+  listeners: {},
+  setNodeRef: vi.fn(),
+  transform: null,
+  isDragging: false,
+};
 
 vi.mock("@apollo/client", async () => {
   const actual = await vi.importActual("@apollo/client");
@@ -39,13 +46,7 @@ vi.mock("@dnd-kit/core", async () => {
       return ReactModule.createElement("div", null, children);
     },
     pointerWithin: vi.fn(),
-    useDraggable: () => ({
-      attributes: {},
-      listeners: {},
-      setNodeRef: vi.fn(),
-      transform: null,
-      isDragging: false,
-    }),
+    useDraggable: () => draggableState,
     useDroppable: () => ({
       setNodeRef: vi.fn(),
       isOver: false,
@@ -120,6 +121,13 @@ describe("TaskBoard states", () => {
     useMutationMock.mockReset();
     navigateMock.mockReset();
     latestDragEndHandler = undefined;
+    draggableState = {
+      attributes: {},
+      listeners: {},
+      setNodeRef: vi.fn(),
+      transform: null,
+      isDragging: false,
+    };
   });
 
   it("shows a loading message while the task board is loading", () => {
@@ -174,6 +182,31 @@ describe("TaskBoard states", () => {
     expect(screen.getByText("Write specs")).toBeInTheDocument();
     expect(screen.getByText("Build board")).toBeInTheDocument();
     expect(screen.getByText("Set up project")).toBeInTheDocument();
+  });
+
+  it("applies drag styles while a task card is being dragged", () => {
+    draggableState = {
+      attributes: {},
+      listeners: {},
+      setNodeRef: vi.fn(),
+      transform: { x: 12, y: 24 },
+      isDragging: true,
+    };
+
+    renderTaskBoard({
+      taskBoard: {
+        todo: [{ id: "1", title: "Write specs" }],
+        inProgress: [],
+        done: [],
+      },
+    });
+
+    const taskCard = screen.getByText("Write specs").closest("div");
+
+    expect(taskCard).toHaveStyle({
+      transform: "translate(12px, 24px)",
+      opacity: "0.5",
+    });
   });
 
   it("navigates to the task details when a task title is clicked", () => {
@@ -321,6 +354,34 @@ describe("TaskBoard states", () => {
     });
   });
 
+  it("updates a task to done with a board refetch query", async () => {
+    const updateTaskStatus = vi.fn().mockResolvedValue({
+      data: {
+        UpdateTaskStatus: { id: "1", status: "DONE" },
+      },
+    });
+
+    renderTaskBoard({
+      updateTaskStatus,
+      taskBoard: {
+        todo: [{ id: "1", title: "Write specs" }],
+        inProgress: [],
+        done: [],
+      },
+      projectId: "project-43",
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+
+    await waitFor(() => {
+      expectStatusUpdateCall(updateTaskStatus, {
+        taskId: "1",
+        status: "DONE",
+        projectId: "project-43",
+      });
+    });
+  });
+
   it("refetches the board when a status update fails", async () => {
     const updateTaskStatus = vi.fn().mockRejectedValue(new Error("Update failed"));
     const refetch = vi.fn().mockResolvedValue({});
@@ -336,6 +397,30 @@ describe("TaskBoard states", () => {
     });
 
     fireEvent.click(screen.getByRole("button", { name: "In Progress" }));
+
+    await waitFor(() => {
+      expect(refetch).toHaveBeenCalled();
+    });
+  });
+
+  it("refetches the board when a drag status update fails", async () => {
+    const updateTaskStatus = vi.fn().mockRejectedValue(new Error("Update failed"));
+    const refetch = vi.fn().mockResolvedValue({});
+
+    renderTaskBoard({
+      updateTaskStatus,
+      refetch,
+      taskBoard: {
+        todo: [{ id: "1", title: "Write specs" }],
+        inProgress: [],
+        done: [],
+      },
+    });
+
+    await triggerDragEnd({
+      active: { id: "1" },
+      over: { id: "DONE" },
+    });
 
     await waitFor(() => {
       expect(refetch).toHaveBeenCalled();

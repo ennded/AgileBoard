@@ -109,7 +109,7 @@ function TaskBoard() {
         refetchQueries: [{ query: GET_TASK_BOARD, variables: { projectId } }],
         awaitRefetchQueries: true,
       });
-    } catch (err) {
+    } catch {
       refetch();
     }
   };
@@ -121,7 +121,7 @@ function TaskBoard() {
         refetchQueries: [{ query: GET_TASK_BOARD, variables: { projectId } }],
         awaitRefetchQueries: true,
       });
-    } catch (err) {
+    } catch {
       refetch();
     }
   };
