@@ -12,17 +12,18 @@ export default function Login() {
   const [login, { loading, error }] = useMutation(LOGIN);
 
   const handleLogin = async () => {
-    try {
-      const res = await login({
-        variables: { email, password },
-      });
+    const res = await login({
+      variables: { email, password },
+    }).catch(() => null);
 
-      const token = res.data.login.token;
-      localStorage.setItem("token", token);
-      navigate("/dashboard");
-    } catch (error) {
-      console.log(error);
+    const token = res?.data?.login?.token;
+
+    if (!token) {
+      return;
     }
+
+    localStorage.setItem("token", token);
+    navigate("/dashboard");
   };
 
   return (

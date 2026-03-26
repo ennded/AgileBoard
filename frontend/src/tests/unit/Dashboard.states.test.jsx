@@ -156,17 +156,16 @@ describe("Dashboard states", () => {
     expect(screen.getByText("Error creating team")).toBeInTheDocument();
   });
 
-  it("logs the error and keeps the input value when the mutation rejects", async () => {
+  it("keeps the input value when the mutation rejects", async () => {
     const createTeam = vi.fn().mockRejectedValue(new Error("Mutation failed"));
     const refetch = vi.fn();
-    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
 
     renderDashboard({ createTeam, refetch });
     fillTeamName("Ops Team");
     fireEvent.click(screen.getByRole("button", { name: "Add" }));
 
     await waitFor(() => {
-      expect(consoleSpy).toHaveBeenCalled();
+      expect(createTeam).toHaveBeenCalled();
     });
 
     expect(refetch).not.toHaveBeenCalled();

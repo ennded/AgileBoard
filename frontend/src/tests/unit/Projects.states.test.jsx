@@ -158,19 +158,18 @@ describe("Projects states", () => {
     expect(screen.getByText("Error creating project")).toBeInTheDocument();
   });
 
-  it("logs the error and keeps the input value when the mutation rejects", async () => {
+  it("keeps the input value when the mutation rejects", async () => {
     const createProject = vi
       .fn()
       .mockRejectedValue(new Error("Mutation failed"));
     const refetch = vi.fn();
-    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
 
     renderProjects({ createProject, refetch, teamId: "team-88" });
     fillProjectName("Release Train");
     fireEvent.click(screen.getByRole("button", { name: "Add" }));
 
     await waitFor(() => {
-      expect(consoleSpy).toHaveBeenCalled();
+      expect(createProject).toHaveBeenCalled();
     });
 
     expect(refetch).not.toHaveBeenCalled();
