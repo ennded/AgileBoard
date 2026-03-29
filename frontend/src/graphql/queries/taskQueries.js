@@ -26,7 +26,12 @@ export const GET_TASK = gql`
       title
       description
       status
+      priority
       assignedTo {
+        id
+        name
+      }
+      createdBy {
         id
         name
       }
