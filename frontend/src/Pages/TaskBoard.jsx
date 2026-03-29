@@ -7,7 +7,15 @@ import {
   CREATE_TASK,
   UPDATE_TASK_STATUS,
 } from "../graphql/mutations/taskMutations";
-import { pointerWithin, DndContext, useDraggable, useDroppable } from "@dnd-kit/core";
+import {
+  PointerSensor,
+  pointerWithin,
+  DndContext,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
 
 const STATUS_MAP = {
   "Todo": "TODO",
@@ -56,9 +64,10 @@ function TaskCard({ task, onOpenTask, onStatusChange }) {
     <div
       ref={setNodeRef}
       style={style}
+      data-testid={`task-card-${task.id}`}
       {...listeners}
       {...attributes}
-      className="p-3 bg-gray-100 rounded shadow-sm cursor-grab"
+      className="p-3 bg-gray-100 rounded shadow-sm cursor-grab active:cursor-grabbing"
     >
       <button
         type="button"
@@ -91,6 +100,13 @@ TaskCard.propTypes = {
 
 function TaskBoard() {
   const navigate = useNavigate();
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+  );
   const [title, setTitle] = useState("");
   const [updateTaskStatus] = useMutation(UPDATE_TASK_STATUS);
   const [submitError, setSubmitError] = useState("");
@@ -182,7 +198,11 @@ function TaskBoard() {
           <p className="mt-2 text-sm text-red-500">{createErrorMessage}</p>
         )}
       </div>
-      <DndContext collisionDetection={pointerWithin} onDragEnd={handleDragEnd}>
+      <DndContext
+        collisionDetection={pointerWithin}
+        onDragEnd={handleDragEnd}
+        sensors={sensors}
+      >
         <div className="grid grid-cols-3 gap-4">
           {BOARD_COLUMNS.map((column) => (
             <Column

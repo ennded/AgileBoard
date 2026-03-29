@@ -46,11 +46,14 @@ vi.mock("@dnd-kit/core", async () => {
       return ReactModule.createElement("div", null, children);
     },
     pointerWithin: vi.fn(),
+    PointerSensor: vi.fn(),
     useDraggable: () => draggableState,
     useDroppable: () => ({
       setNodeRef: vi.fn(),
       isOver: false,
     }),
+    useSensor: vi.fn((sensor, options) => ({ sensor, options })),
+    useSensors: vi.fn((...sensors) => sensors),
   };
 });
 
@@ -202,7 +205,7 @@ describe("TaskBoard states", () => {
       },
     });
 
-    const taskCard = screen.getByText("Write specs").closest("div");
+    const taskCard = screen.getByTestId("task-card-1");
 
     expect(taskCard).toHaveStyle({
       transform: "translate(12px, 24px)",
