@@ -30,6 +30,10 @@ const getTasks = async (projectId) => {
   });
 };
 
+const getTaskById = async (id) => {
+  return Task.findById(id);
+};
+
 const updateTaskStatus = async (taskId, status) => {
   const task = await Task.findById(taskId);
 
@@ -96,4 +100,5 @@ module.exports = {
   updateTaskStatus,
   assignTask,
   getTaskBoard,
+  getTaskById,
 };

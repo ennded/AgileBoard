@@ -56,6 +56,7 @@ async function loadClientModule() {
 describe("Apollo client", () => {
   beforeEach(() => {
     localStorage.clear();
+    vi.unstubAllEnvs();
   });
 
   it("creates a configured client instance", async () => {
@@ -74,6 +75,16 @@ describe("Apollo client", () => {
     expect(client).toEqual({
       link: instances.combinedLink,
       cache: instances.cacheInstance,
+    });
+  });
+
+  it("prefers the configured GraphQL URL from the Vite environment", async () => {
+    vi.stubEnv("VITE_GRAPHQL_URL", "https://api.example.com/graphql");
+
+    const { mocks } = await loadClientModule();
+
+    expect(mocks.HttpLinkMock).toHaveBeenCalledWith({
+      uri: "https://api.example.com/graphql",
     });
   });
 

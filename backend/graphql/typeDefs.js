@@ -67,6 +67,7 @@ module.exports = gql`
     teams: [Team]
     projects(teamId: ID!): [Project]
     tasks(projectId: ID!): [Task]
+    task(id: ID!): Task
     comments(taskId: ID!): [Comment]
     notifications: [Notification]
     taskBoard(projectId: ID!): TaskBoard

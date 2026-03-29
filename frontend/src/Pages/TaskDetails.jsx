@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { GET_COMMENTS } from "../graphql/queries/commentQueries";
 import { ADD_COMMENT } from "../graphql/mutations/commentQueries";
+import { GET_TASK } from "../graphql/queries/taskQueries";
 
 function getUserInitials(name = "Unknown User") {
   return name
@@ -43,6 +44,15 @@ function TaskDetails() {
     variables: { taskId },
   });
 
+  const {
+    data: taskData,
+    loading: taskLoading,
+    error: taskError,
+  } = useQuery(GET_TASK, {
+    variables: { id: taskId },
+  });
+  const task = taskData?.task ?? null;
+
   const [addComment, { loading: isAdding, error: mutationError }] =
     useMutation(ADD_COMMENT);
 
@@ -69,8 +79,8 @@ function TaskDetails() {
     }
   };
 
-  if (loading) return <p className="p-4">Loading...</p>;
-  if (error) return <p className="p-4 text-red-500">Error</p>;
+  if (loading || taskLoading) return <p className="p-4">Loading...</p>;
+  if (error || taskError) return <p className="p-4 text-red-500">Error</p>;
 
   const comments = data?.comments ?? [];
   const commentErrorMessage =
@@ -97,16 +107,14 @@ function TaskDetails() {
             <div className="min-w-0 flex-1">
               <div className="mb-3 flex flex-wrap items-center gap-2">
                 <Badge tone="issue">Story</Badge>
-                <Badge tone="status">In Progress</Badge>
+                <Badge tone="status">{task?.status ?? "TODO"}</Badge>
                 <Badge tone="muted">{taskReference}</Badge>
               </div>
               <h1 className="text-3xl font-semibold tracking-tight text-slate-950">
-                Task Details
+                {task?.title ?? "Untitled Task"}
               </h1>
               <p className="mt-3 max-w-4xl text-sm leading-7 text-slate-600">
-                Review the latest delivery discussion, issue context, and
-                collaboration updates for this work item in a Jira-style issue
-                view.
+                {task?.description ?? "No description provided."}
               </p>
             </div>
 
@@ -267,7 +275,10 @@ function TaskDetails() {
                   Details
                 </h3>
                 <div className="mt-4 space-y-4">
-                  <DetailRow label="Assignee" value="Unassigned" />
+                  <DetailRow
+                    label="Assignee"
+                    value={task?.assignedTo?.name ?? "Unassigned"}
+                  />
                   <DetailRow label="Reporter" value="Project Admin" />
                   <DetailRow label="Priority" value="Medium" />
                   <DetailRow label="Sprint" value="Current Sprint" />
@@ -280,7 +291,15 @@ function TaskDetails() {
                   People
                 </h3>
                 <div className="mt-4 space-y-3">
-                  <PersonRow label="Assignee" value="Unassigned" initials="UA" />
+                  <PersonRow
+                    label="Assignee"
+                    value={task?.assignedTo?.name ?? "Unassigned"}
+                    initials={
+                      task?.assignedTo
+                        ? getUserInitials(task.assignedTo.name)
+                        : "UA"
+                    }
+                  />
                   <PersonRow label="Reporter" value="Admin" initials="AD" />
                   <PersonRow label="Watchers" value="3 watching" initials="3" />
                 </div>
