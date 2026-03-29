@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { vi } from "vitest";
 import { GET_COMMENTS } from "../../graphql/queries/commentQueries";
 import { ADD_COMMENT } from "../../graphql/mutations/commentQueries";
+import { GET_TASK } from "../../graphql/queries/taskQueries";
 
 const useQueryMock = vi.fn();
 const useMutationMock = vi.fn();
@@ -32,16 +33,37 @@ function renderTaskDetails({
   loading = false,
   error = undefined,
   comments = [],
+  task = {
+    id: "task-1",
+    title: "Task Details",
+    description: "Task summary",
+    status: "TODO",
+    assignedTo: { name: "Jane Doe" },
+  },
   refetch = vi.fn(),
   addComment = vi.fn(),
   mutationState = {},
   taskId = "task-1",
 } = {}) {
-  useQueryMock.mockReturnValue({
-    data: loading || error ? undefined : { comments },
-    loading,
-    error,
-    refetch,
+  useQueryMock.mockImplementation((query) => {
+    if (query === GET_COMMENTS) {
+      return {
+        data: loading || error ? undefined : { comments },
+        loading,
+        error,
+        refetch,
+      };
+    }
+
+    if (query === GET_TASK) {
+      return {
+        data: loading || error ? undefined : { task },
+        loading,
+        error,
+      };
+    }
+
+    throw new Error(`Unexpected query: ${String(query)}`);
   });
 
   useMutationMock.mockReturnValue([addComment, mutationState]);
@@ -80,6 +102,9 @@ describe("TaskDetails states", () => {
 
     expect(useQueryMock).toHaveBeenCalledWith(GET_COMMENTS, {
       variables: { taskId: "task-77" },
+    });
+    expect(useQueryMock).toHaveBeenCalledWith(GET_TASK, {
+      variables: { id: "task-77" },
     });
     expect(useMutationMock).toHaveBeenCalledWith(ADD_COMMENT);
   });
@@ -270,11 +295,33 @@ describe("TaskDetails states", () => {
   });
 
   it("renders an empty comment list when data has no comments field", () => {
-    useQueryMock.mockReturnValue({
-      data: { comments: null },
-      loading: false,
-      error: undefined,
-      refetch: vi.fn(),
+    useQueryMock.mockImplementation((query) => {
+      if (query === GET_COMMENTS) {
+        return {
+          data: { comments: null },
+          loading: false,
+          error: undefined,
+          refetch: vi.fn(),
+        };
+      }
+
+      if (query === GET_TASK) {
+        return {
+          data: {
+            task: {
+              id: "task-1",
+              title: "Task Details",
+              description: "Task summary",
+              status: "TODO",
+              assignedTo: { name: "Jane Doe" },
+            },
+          },
+          loading: false,
+          error: undefined,
+        };
+      }
+
+      throw new Error(`Unexpected query: ${String(query)}`);
     });
     useMutationMock.mockReturnValue([vi.fn(), {}]);
 

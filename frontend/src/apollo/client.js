@@ -5,8 +5,11 @@ import {
   ApolloLink,
 } from "@apollo/client";
 
+const graphqlUri =
+  import.meta.env.VITE_GRAPHQL_URL ?? "http://localhost:5001/graphql";
+
 const httpLink = new HttpLink({
-  uri: "http://localhost:5001/graphql",
+  uri: graphqlUri,
 });
 
 // ✅ Use ApolloLink instead of setContext
