@@ -18,9 +18,9 @@ import {
 } from "@dnd-kit/core";
 
 const STATUS_MAP = {
-  "Todo": "TODO",
+  Todo: "TODO",
   "In Progress": "IN_PROGRESS",
-  "Done": "DONE",
+  Done: "DONE",
 };
 
 const BOARD_COLUMNS = [
@@ -112,6 +112,8 @@ function TaskBoard() {
   const [submitError, setSubmitError] = useState("");
   const [createTask, { loading: isCreating, error: mutationError }] =
     useMutation(CREATE_TASK);
+  const [description, setDescription] = useState("");
+  const [priority, setPriority] = useState("MEDIUM");
   const { projectId } = useParams();
   const { data, loading, error, refetch } = useQuery(GET_TASK_BOARD, {
     variables: { projectId },
@@ -128,21 +130,25 @@ function TaskBoard() {
   const openTask = (taskId) => navigate(`/task/${taskId}`);
 
   const handleCreateTask = async () => {
-    const trimmedTitle = title.trim();
-
-    if (!trimmedTitle || isCreating) return;
+    if (!title.trim()) return;
 
     setSubmitError("");
 
     try {
       await createTask({
         variables: {
-          title: trimmedTitle,
-          projectId,
+          input: {
+            title: title.trim(),
+            projectId,
+            description: description.trim(),
+            priority,
+          },
         },
       });
 
       setTitle("");
+      setDescription("");
+      setPriority("MEDIUM");
       await refetch();
     } catch (error) {
       setSubmitError(error.message || "Unable to create task right now.");
@@ -186,6 +192,24 @@ function TaskBoard() {
             placeholder="Task title"
             className="border p-2 rounded w-full"
           />
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Description (optional)"
+            rows={3}
+            className="w-full rounded border border-slate-300 px-3 py-2 text-sm"
+          />
+
+          <select
+            value={priority}
+            onChange={(e) => setPriority(e.target.value)}
+            className="w-full rounded border border-slate-300 px-3 py-2 text-sm"
+          >
+            <option value="LOW">LOW</option>
+            <option value="MEDIUM">MEDIUM</option>
+            <option value="HIGH">HIGH</option>
+            <option value="CRITICAL">CRITICAL</option>
+          </select>
           <button
             onClick={handleCreateTask}
             disabled={isCreating}

@@ -2,26 +2,26 @@ const Task = require("../models/Task");
 const notificationService = require("../services/notificationService");
 
 const createTask = async (data, user) => {
-  const assignedUserId = data.assignedTo || user._id;
+  const { title, projectId, description, priority } = data.input;
   const task = new Task({
-    title: data.title,
-    description: data.description,
-    project: data.projectId,
-    assignedTo: assignedUserId,
-    createdBy: user._id,
+    title,
+    description,
+    priority,
+    project: projectId,
+    createdBy: user._id, // ← ADD — comes from context.user, never from frontend
   });
 
   await task.save();
 
-  if (assignedUserId) {
-    await notificationService.createNotification({
-      userId: assignedUserId,
-      type: "TASK_ASSIGNED",
-      message: `You were assigned a task: ${task.title}`,
-    });
-  }
-
   return task;
+};
+
+const updateTask = async (id, input) => {
+  return Task.findByIdAndUpdate(
+    id,
+    { $set: input },
+    { new: true, runValidators: true },
+  );
 };
 
 const getTasks = async (projectId) => {
@@ -96,6 +96,7 @@ const getTaskBoard = async (projectId) => {
 
 module.exports = {
   createTask,
+  updateTask,
   getTasks,
   updateTaskStatus,
   assignTask,

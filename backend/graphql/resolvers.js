@@ -69,6 +69,10 @@ module.exports = {
       requireAuth(context.user);
       return taskService.createTask(args, context.user);
     },
+    updateTask: async (_, args, context) => {
+      requireAuth(context.user);
+      return taskService.updateTask(args.id, args.input);
+    },
     updateTaskStatus: async (_, args, context) => {
       requireAuth(context.user);
       return taskService.updateTaskStatus(args.taskId, args.status);
@@ -90,6 +94,9 @@ module.exports = {
   Task: {
     assignedTo: async (parent) => {
       return User.findById(parent.assignedTo);
+    },
+    createdBy: async (parent) => {
+      return User.findById(parent.createdBy);
     },
   },
 

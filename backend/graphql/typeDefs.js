@@ -6,6 +6,27 @@ module.exports = gql`
     DONE
   }
 
+  enum Priority {
+    LOW
+    MEDIUM
+    HIGH
+    CRITICAL
+  }
+
+  input CreateTaskInput {
+    title: String!
+    projectId: ID!
+    description: String
+    priority: Priority
+  }
+
+  input UpdateTaskInput {
+    title: String
+    description: String
+    priority: Priority
+    status: TaskStatus
+  }
+
   type User {
     id: ID!
     name: String!
@@ -18,8 +39,10 @@ module.exports = gql`
     title: String!
     description: String
     status: TaskStatus
+    priority: Priority
     project: Project
     assignedTo: User
+    createdBy: User
   }
 
   type Comment {
@@ -79,12 +102,8 @@ module.exports = gql`
     login(email: String!, password: String!): AuthPayload
     createTeam(name: String!): Team
     createProject(name: String!, teamId: ID!): Project
-    createTask(
-      title: String!
-      description: String
-      projectId: ID!
-      assignedTo: ID
-    ): Task
+    createTask(input: CreateTaskInput!): Task
+    updateTask(id: ID!, input: UpdateTaskInput!): Task
     updateTaskStatus(taskId: ID!, status: TaskStatus!): Task
     assignTask(taskId: ID!, userId: ID!): Task
     addComment(taskId: ID!, message: String!): Comment

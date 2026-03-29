@@ -148,9 +148,7 @@ function TaskDetails() {
                       Description
                     </h2>
                     <p className="mt-2 text-sm leading-7 text-slate-600">
-                      This issue captures task discussion and team updates. Use
-                      the activity thread below to document progress, blockers,
-                      and implementation notes.
+                      {task?.description ?? "No description provided."}
                     </p>
                   </div>
                   <button className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100">
@@ -279,9 +277,14 @@ function TaskDetails() {
                     label="Assignee"
                     value={task?.assignedTo?.name ?? "Unassigned"}
                   />
-                  <DetailRow label="Reporter" value="Project Admin" />
-                  <DetailRow label="Priority" value="Medium" />
-                  <DetailRow label="Sprint" value="Current Sprint" />
+                  <DetailRow
+                    label="Priority"
+                    value={task?.priority ?? "MEDIUM"}
+                  />
+                  <DetailRow
+                    label="Reporter"
+                    value={task?.createdBy?.name ?? "Unknown"}
+                  />
                   <DetailRow label="Labels" value="frontend, collaboration" />
                 </div>
               </section>
@@ -300,7 +303,15 @@ function TaskDetails() {
                         : "UA"
                     }
                   />
-                  <PersonRow label="Reporter" value="Admin" initials="AD" />
+                  <PersonRow
+                    label="Reporter"
+                    value={task?.createdBy?.name ?? "Unknown"}
+                    initials={
+                      task?.createdBy
+                        ? getUserInitials(task.createdBy.name)
+                        : "?"
+                    }
+                  />
                   <PersonRow label="Watchers" value="3 watching" initials="3" />
                 </div>
               </section>
