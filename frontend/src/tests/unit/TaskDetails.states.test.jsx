@@ -38,7 +38,9 @@ function renderTaskDetails({
     title: "Task Details",
     description: "Task summary",
     status: "TODO",
+    priority: "HIGH",
     assignedTo: { name: "Jane Doe" },
+    createdBy: { name: "Alex Reporter" },
   },
   refetch = vi.fn(),
   addComment = vi.fn(),
@@ -124,6 +126,47 @@ describe("TaskDetails states", () => {
     expect(screen.getByText("Lagertha")).toBeInTheDocument();
     expect(screen.getByText("Looks good")).toBeInTheDocument();
     expect(screen.getByText("Ship it")).toBeInTheDocument();
+  });
+
+  it("renders the task description, priority, and reporter from the task query", () => {
+    renderTaskDetails({
+      task: {
+        id: "task-1",
+        title: "Task Details",
+        description: "Investigate the board creation flow",
+        status: "IN_PROGRESS",
+        priority: "CRITICAL",
+        assignedTo: { name: "Jane Doe" },
+        createdBy: { name: "Alex Reporter" },
+      },
+    });
+
+    expect(
+      screen.getAllByText("Investigate the board creation flow").length,
+    ).toBeGreaterThan(0);
+    expect(screen.getByText("CRITICAL")).toBeInTheDocument();
+    expect(screen.getAllByText("Alex Reporter").length).toBeGreaterThan(0);
+  });
+
+  it("shows safe fallbacks when description, priority, or reporter are missing", () => {
+    renderTaskDetails({
+      task: {
+        id: "task-1",
+        title: "Task Details",
+        description: null,
+        status: "TODO",
+        priority: null,
+        assignedTo: null,
+        createdBy: null,
+      },
+    });
+
+    expect(
+      screen.getAllByText("No description provided.").length,
+    ).toBeGreaterThan(0);
+    expect(screen.getByText("MEDIUM")).toBeInTheDocument();
+    expect(screen.getAllByText("Unknown").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Unassigned").length).toBeGreaterThan(0);
   });
 
   it("formats long task ids and comment timestamps for the issue view", () => {
@@ -313,7 +356,9 @@ describe("TaskDetails states", () => {
               title: "Task Details",
               description: "Task summary",
               status: "TODO",
+              priority: "HIGH",
               assignedTo: { name: "Jane Doe" },
+              createdBy: { name: "Alex Reporter" },
             },
           },
           loading: false,

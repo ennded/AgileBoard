@@ -233,6 +233,12 @@ describe("TaskBoard states", () => {
     fireEvent.change(screen.getByPlaceholderText("Task title"), {
       target: { value: "Ship notifications" },
     });
+    fireEvent.change(screen.getByPlaceholderText("Description (optional)"), {
+      target: { value: "Add a task description" },
+    });
+    fireEvent.change(screen.getByRole("combobox"), {
+      target: { value: "HIGH" },
+    });
 
     expect(
       screen.getByRole("heading", { name: "Create Task", level: 2 }),
@@ -240,6 +246,10 @@ describe("TaskBoard states", () => {
     expect(screen.getByPlaceholderText("Task title")).toHaveValue(
       "Ship notifications",
     );
+    expect(screen.getByPlaceholderText("Description (optional)")).toHaveValue(
+      "Add a task description",
+    );
+    expect(screen.getByRole("combobox")).toHaveValue("HIGH");
   });
 
   it("does not call the create task mutation when the title is empty", () => {
@@ -264,10 +274,16 @@ describe("TaskBoard states", () => {
     expect(createTask).not.toHaveBeenCalled();
   });
 
-  it("creates a task, clears the input and refetches the board", async () => {
+  it("creates a task with description and priority, then resets the form", async () => {
     const createTask = vi.fn().mockResolvedValue({
       data: {
-        createTask: { id: "4", title: "Ship notifications", status: "TODO" },
+        createTask: {
+          id: "4",
+          title: "Ship notifications",
+          description: "Ship the updated notification flow",
+          status: "TODO",
+          priority: "CRITICAL",
+        },
       },
     });
     const refetch = vi.fn().mockResolvedValue({});
@@ -277,13 +293,23 @@ describe("TaskBoard states", () => {
     fireEvent.change(screen.getByPlaceholderText("Task title"), {
       target: { value: "  Ship notifications  " },
     });
+    fireEvent.change(screen.getByPlaceholderText("Description (optional)"), {
+      target: { value: "  Ship the updated notification flow  " },
+    });
+    fireEvent.change(screen.getByRole("combobox"), {
+      target: { value: "CRITICAL" },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Add" }));
 
     await waitFor(() => {
       expect(createTask).toHaveBeenCalledWith({
         variables: {
-          title: "Ship notifications",
-          projectId: "project-99",
+          input: {
+            title: "Ship notifications",
+            projectId: "project-99",
+            description: "Ship the updated notification flow",
+            priority: "CRITICAL",
+          },
         },
       });
     });
@@ -291,6 +317,10 @@ describe("TaskBoard states", () => {
     await waitFor(() => {
       expect(refetch).toHaveBeenCalled();
       expect(screen.getByPlaceholderText("Task title")).toHaveValue("");
+      expect(screen.getByPlaceholderText("Description (optional)")).toHaveValue(
+        "",
+      );
+      expect(screen.getByRole("combobox")).toHaveValue("MEDIUM");
     });
   });
 
