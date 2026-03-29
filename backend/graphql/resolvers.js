@@ -26,6 +26,10 @@ module.exports = {
       requireAuth(context.user);
       return taskService.getTasks(args.projectId);
     },
+    task: async (_, args, context) => {
+      requireAuth(context.user);
+      return taskService.getTaskById(args.id);
+    },
     comments: async (_, args, context) => {
       requireAuth(context.user);
       return commentService.getComments(args.taskId);
